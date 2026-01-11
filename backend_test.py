@@ -348,12 +348,12 @@ def main():
         print("❌ Second message failed")
         return 1
 
-    # Test 7: Get messages
+    # Test 8: Get messages
     if not tester.test_get_messages():
         print("❌ Get messages failed")
         return 1
 
-    # Test 8: Admin metadata
+    # Test 9: Admin metadata
     if not tester.test_admin_metadata():
         print("❌ Admin metadata failed")
         return 1
