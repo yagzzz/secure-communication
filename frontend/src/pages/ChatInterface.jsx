@@ -126,7 +126,22 @@ export default function ChatInterface({ user, onLogout }) {
         user_id: user.id,
       });
       fetchMessages(selectedConversation.id);
+      
+      // POLLING - 250ms'de bir mesaj kontrol et
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      
+      pollingIntervalRef.current = setInterval(() => {
+        fetchMessages(selectedConversation.id);
+      }, 250);
     }
+    
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, [selectedConversation]);
 
   useEffect(() => {
