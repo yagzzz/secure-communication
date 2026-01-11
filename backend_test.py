@@ -296,7 +296,12 @@ def main():
         print("❌ Find user and conversation creation failed")
         return 1
 
-    # Test 6: Send messages
+    # Test 6: Get conversations to find conversation ID
+    if not tester.test_get_conversations():
+        print("❌ Get conversations failed")
+        return 1
+
+    # Test 7: Send messages
     if not tester.test_send_message("Merhaba, test mesajı"):
         print("❌ First message failed")
         return 1
