@@ -271,7 +271,7 @@ export default function AdminDashboard({ user, onLogout }) {
                           <div>
                             <p className="font-medium text-slate-100">{u.username}</p>
                             <p className="text-xs text-slate-400 mono-font">
-                              {u.role === 'admin' ? '👑 Admin' : '👤 Kullanıcı'}
+                              {u.role === 'admin' ? '👑 Admin' : '👤 Kullanıcı'} • {u.user_code || 'N/A'}
                             </p>
                           </div>
                         </div>
