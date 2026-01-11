@@ -330,6 +330,9 @@ async def find_user_by_code(username_or_code: str, security_word: str, current_u
         user_doc['last_seen'] = datetime.fromisoformat(user_doc['last_seen'])
     
     return User(**user_doc)
+
+@api_router.post("/conversations", response_model=Conversation)
+async def create_conversation(participant_ids: List[str], current_user: User = Depends(get_current_user)):
     if current_user.id not in participant_ids:
         participant_ids.append(current_user.id)
     
