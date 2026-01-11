@@ -290,9 +290,10 @@ def main():
         print("❌ Get users failed")
         return 1
 
-    # Test 5: Create conversation
-    if not tester.test_create_conversation([user2]):
-        print("❌ Conversation creation failed")
+    # Test 5: Find user and create conversation
+    find_success, found_user = tester.test_find_user_and_create_conversation(user2, "secure2")
+    if not find_success:
+        print("❌ Find user and conversation creation failed")
         return 1
 
     # Test 6: Send messages
