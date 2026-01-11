@@ -210,6 +210,22 @@ export default function ChatInterface({ user, onLogout }) {
     }
   };
 
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (let item of items) {
+      if (item.type.indexOf('image') !== -1) {
+        const blob = item.getAsFile();
+        setSelectedFile(blob);
+        setMessageType('image');
+        toast.success('📋 Resim yapıştırıldı!');
+        e.preventDefault();
+        break;
+      }
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!messageInput.trim() && !selectedFile) return;
