@@ -1,28 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MessageSquare,
-  Send,
-  Image as ImageIcon,
-  Video,
-  FileText,
-  MapPin,
-  Mic,
-  Phone,
-  VideoIcon,
-  LogOut,
-  ShieldCheck,
-  Lock,
-  Plus,
-  Paperclip,
-  X,
-  Pin,
-  Edit2,
-  Smile,
-  User,
-  Search,
-  Menu,
-  HardDrive,
+  MessageSquare, Send, Image as ImageIcon, Video, FileText, MapPin, Mic,
+  Phone, VideoIcon, LogOut, ShieldCheck, Lock, Plus, Paperclip, X, Pin,
+  Smile, User, Search, Menu, HardDrive, Reply, Download, Users, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +17,8 @@ import io from 'socket.io-client';
 import ProfileModal from '@/components/ProfileModal';
 import StickerPicker from '@/components/StickerPicker';
 import NASModal from '@/components/NASModal';
+import VideoCallModal from '@/components/VideoCallModal';
+import { requestNotificationPermission, notifyNewMessage, notifyIncomingCall } from '@/utils/notifications';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -47,7 +30,9 @@ export default function ChatInterface({ user, onLogout }) {
   const [messageInput, setMessageInput] = useState('');
   const [users, setUsers] = useState([]);
   const [showNewConversation, setShowNewConversation] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [groupName, setGroupName] = useState('');
   const [socket, setSocket] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
@@ -58,33 +43,58 @@ export default function ChatInterface({ user, onLogout }) {
   const [showNAS, setShowNAS] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState(null);
+  
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const recordingIntervalRef = useRef(null);
 
   const token = localStorage.getItem('token');
-  const config = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
+  const config = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => {
+    requestNotificationPermission();
     fetchUsers();
     fetchConversations();
+    initSocket();
+  }, []);
 
+  const initSocket = () => {
     const newSocket = io(BACKEND_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket connected');
+      console.log('✅ Socket bağlandı:', newSocket.id);
+      toast.success('🟢 Bağlantı kuruldu');
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('❌ Socket bağlantısı kesildi');
+      toast.error('🔴 Bağlantı kesildi');
     });
 
     newSocket.on('new_message', (message) => {
-      setMessages((prev) => [...prev, message]);
-      toast.success(`💬 ${message.sender_username}`);
+      console.log('📩 Yeni mesaj alındı:', message);
+      setMessages((prev) => {
+        // Duplicate check
+        if (prev.some(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
+      
+      if (message.sender_id !== user.id) {
+        notifyNewMessage(message.sender_username, message.content);
+        toast.success(`💬 ${message.sender_username}`);
+      }
     });
 
     newSocket.on('user_typing', (data) => {
@@ -92,15 +102,23 @@ export default function ChatInterface({ user, onLogout }) {
       setTimeout(() => setTypingUser(null), 3000);
     });
 
+    newSocket.on('call_start', (data) => {
+      if (data.caller_id !== user.id) {
+        notifyIncomingCall(data.caller_username, data.call_type);
+        if (window.confirm(`${data.caller_username} sizi arıyor. Kabul ediyor musunuz?`)) {
+          setShowVideoCall(true);
+        }
+      }
+    });
+
     setSocket(newSocket);
 
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
+    return () => newSocket.disconnect();
+  };
 
   useEffect(() => {
     if (selectedConversation && socket) {
+      console.log('🔗 Konuşmaya katıldı:', selectedConversation.id);
       socket.emit('join_conversation', {
         conversation_id: selectedConversation.id,
         user_id: user.id,
@@ -122,7 +140,7 @@ export default function ChatInterface({ user, onLogout }) {
       const response = await axios.get(`${API}/users`, config);
       setUsers(response.data.filter((u) => u.id !== user.id));
     } catch (error) {
-      toast.error('Kullanıcılar yüklenemedi');
+      toast.error('❌ Kullanıcılar yüklenemedi');
     }
   };
 
@@ -131,7 +149,7 @@ export default function ChatInterface({ user, onLogout }) {
       const response = await axios.get(`${API}/conversations`, config);
       setConversations(response.data);
     } catch (error) {
-      toast.error('Konuşmalar yüklenemedi');
+      toast.error('❌ Konuşmalar yüklenemedi');
     }
   };
 
@@ -140,22 +158,32 @@ export default function ChatInterface({ user, onLogout }) {
       const response = await axios.get(`${API}/conversations/${conversationId}/messages`, config);
       setMessages(response.data);
     } catch (error) {
-      toast.error('Mesajlar yüklenemedi');
+      toast.error('❌ Mesajlar yüklenemedi');
     }
   };
 
-  const handleCreateConversation = async () => {
-    if (!selectedUserId) return;
+  const handleCreateConversation = async (isGroup = false) => {
+    if (!isGroup && selectedUserIds.length === 0) return;
+    if (isGroup && (selectedUserIds.length === 0 || !groupName)) {
+      toast.error('Grup adı ve üye seçin');
+      return;
+    }
 
     try {
-      const response = await axios.post(`${API}/conversations`, [selectedUserId], config);
+      const payload = isGroup 
+        ? { participant_ids: selectedUserIds, is_group: true, name: groupName }
+        : selectedUserIds;
+      
+      const response = await axios.post(`${API}/conversations`, payload, config);
       setConversations([...conversations, response.data]);
       setSelectedConversation(response.data);
       setShowNewConversation(false);
-      setSelectedUserId('');
-      toast.success('✅ Konuşma oluşturuldu');
+      setShowNewGroup(false);
+      setSelectedUserIds([]);
+      setGroupName('');
+      toast.success(`✅ ${isGroup ? 'Grup' : 'Konuşma'} oluşturuldu`);
     } catch (error) {
-      toast.error('Konuşma oluşturulamadı');
+      toast.error('❌ Oluşturulamadı');
     }
   };
 
@@ -167,6 +195,10 @@ export default function ChatInterface({ user, onLogout }) {
       const formData = new FormData();
       formData.append('content', messageInput || 'Dosya paylaşıldı');
       formData.append('message_type', messageType);
+      
+      if (replyingTo) {
+        formData.append('metadata', JSON.stringify({ reply_to: replyingTo.id, reply_content: replyingTo.content }));
+      }
 
       if (selectedFile) {
         formData.append('file', selectedFile);
@@ -175,21 +207,21 @@ export default function ChatInterface({ user, onLogout }) {
       const response = await axios.post(
         `${API}/conversations/${selectedConversation.id}/messages`,
         formData,
-        {
-          ...config,
-          headers: {
-            ...config.headers,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
+        { ...config, headers: { ...config.headers, 'Content-Type': 'multipart/form-data' } }
       );
 
-      setMessages([...messages, response.data]);
+      console.log('📤 Mesaj gönderildi:', response.data);
+      
+      // Lokal güncelleme
+      setMessages(prev => [...prev, response.data]);
       setMessageInput('');
       setSelectedFile(null);
       setMessageType('text');
+      setReplyingTo(null);
+      
     } catch (error) {
-      toast.error('Mesaj gönderilemedi');
+      console.error('Mesaj gönderme hatası:', error);
+      toast.error('❌ Mesaj gönderilemedi');
     }
   };
 
@@ -199,7 +231,7 @@ export default function ChatInterface({ user, onLogout }) {
       fetchMessages(selectedConversation.id);
       toast.success('📌 Mesaj sabitleme güncellendi');
     } catch (error) {
-      toast.error('İşlem başarısız');
+      toast.error('❌ İşlem başarısız');
     }
   };
 
@@ -221,13 +253,8 @@ export default function ChatInterface({ user, onLogout }) {
       });
     }
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-    }, 2000);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
   };
 
   const handleFileSelect = (type) => {
@@ -243,54 +270,67 @@ export default function ChatInterface({ user, onLogout }) {
     }
   };
 
-  const handleSendLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          setMessageInput(`📍 Konum: ${location.latitude}, ${location.longitude}`);
-          setMessageType('location');
-          toast.success('📍 Konum alındı');
-        },
-        (error) => {
-          toast.error('Konum alınamadı');
-        }
-      );
-    } else {
-      toast.error('Tarayıcınız konumu desteklemiyor');
+  const handleDownloadFile = (fileUrl, filename) => {
+    const link = document.createElement('a');
+    link.href = BACKEND_URL + fileUrl;
+    link.download = filename || 'download';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const file = new File([blob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+        setSelectedFile(file);
+        setMessageType('audio');
+        setRecording(false);
+        setRecordingTime(0);
+        stream.getTracks().forEach(track => track.stop());
+        if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+        toast.success('🎤 Ses kaydı tamamlandı');
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setRecording(true);
+      
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+      toast.success('🎤 Kayıt başladı');
+    } catch (error) {
+      toast.error('❌ Mikrofon erişimi reddedildi');
     }
   };
 
-  const startRecording = async () => {
+  const stopVoiceRecording = () => {
+    if (mediaRecorder && recording) {
+      mediaRecorder.stop();
+    }
+  };
+
+  const handleStartCall = async (callType) => {
+    if (!selectedConversation) return;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      const chunks = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        chunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const file = new File([blob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
-        setSelectedFile(file);
-        setMessageType('audio');
-        toast.success('🎤 Ses kaydı tamamlandı');
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      toast.success('🎤 Kayıt başladı (10 sn)');
-
-      setTimeout(() => {
-        mediaRecorder.stop();
-      }, 10000);
+      await axios.post(`${API}/calls/start`, {
+        conversation_id: selectedConversation.id,
+        call_type: callType,
+      }, config);
+      setShowVideoCall(true);
+      toast.success(`📞 ${callType === 'video' ? 'Görüntülü' : 'Sesli'} arama başlatıldı`);
     } catch (error) {
-      toast.error('Mikrofon erişimi reddedildi');
+      toast.error('❌ Arama başlatılamadı');
     }
   };
 
@@ -304,8 +344,24 @@ export default function ChatInterface({ user, onLogout }) {
     }
   };
 
+  const handleSendLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setMessageInput(`📍 Konum: ${position.coords.latitude}, ${position.coords.longitude}`);
+          setMessageType('location');
+          toast.success('📍 Konum alındı');
+        },
+        () => toast.error('❌ Konum alınamadı')
+      );
+    } else {
+      toast.error('❌ Tarayıcınız konumu desteklemiyor');
+    }
+  };
+
   const getOtherParticipants = (conv) => {
-    return conv.participant_usernames.filter((name) => name !== user.username).join(', ') || 'Siz';
+    if (conv.is_group) return conv.name || 'Grup';
+    return conv.participant_usernames?.filter(name => name !== user.username).join(', ') || 'Siz';
   };
 
   const getUserAvatar = (username) => {
@@ -327,12 +383,14 @@ export default function ChatInterface({ user, onLogout }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
         className={`flex ${isSent ? 'justify-end' : 'justify-start'} mb-3 group`}
-        data-testid={`message-${message.id}`}
       >
         <div className="flex items-end gap-2 max-w-[75%]">
           {!isSent && (
-            <Avatar className="w-8 h-8 border border-slate-700">
-              <AvatarImage src={getUserAvatar(message.sender_username)} />
+            <Avatar 
+              className="w-8 h-8 border border-slate-700 cursor-pointer"
+              onClick={() => setViewingProfile(users.find(u => u.username === message.sender_username))}
+            >
+              <AvatarImage src={getUserAvatar(message.sender_username) ? BACKEND_URL + getUserAvatar(message.sender_username) : null} />
               <AvatarFallback className="bg-slate-800 text-xs">
                 {message.sender_username[0].toUpperCase()}
               </AvatarFallback>
@@ -354,100 +412,88 @@ export default function ChatInterface({ user, onLogout }) {
             
             {!isSent && <p className="text-xs text-slate-400 mb-1">{message.sender_username}</p>}
             
+            {message.metadata?.reply_to && (
+              <div className="mb-2 p-2 bg-black/20 rounded-lg border-l-2 border-[#22c55e]">
+                <p className="text-xs opacity-70">↩️ Yanıtlanan: {message.metadata.reply_content?.substring(0, 50)}</p>
+              </div>
+            )}
+            
+            {message.message_type === 'text' && <p className="text-sm break-words">{message.content}</p>}
             {message.message_type === 'location' && (
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 <span className="text-sm">{message.content}</span>
               </div>
             )}
-            
             {message.message_type === 'audio' && (
               <div className="flex items-center gap-2">
                 <Mic className="w-4 h-4" />
-                <span className="text-sm">Ses kaydı</span>
+                <span className="text-sm">Sesli mesaj</span>
+                {message.metadata?.file_url && (
+                  <Button size="sm" variant="ghost" onClick={() => handleDownloadFile(message.metadata.file_url, 'voice.webm')}>
+                    <Download className="w-3 h-3" />
+                  </Button>
+                )}
               </div>
             )}
-            
-            {message.message_type === 'image' && (
-              <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4" />
-                <span className="text-sm">{message.metadata?.filename || 'Resim'}</span>
+            {(message.message_type === 'image' || message.message_type === 'video' || message.message_type === 'file') && (
+              <div className="space-y-2">
+                {message.message_type === 'image' && message.metadata?.file_url && (
+                  <img 
+                    src={BACKEND_URL + message.metadata.file_url} 
+                    alt="shared" 
+                    className="max-w-xs rounded-lg cursor-pointer"
+                    onClick={() => window.open(BACKEND_URL + message.metadata.file_url, '_blank')}
+                  />
+                )}
+                <div className="flex items-center gap-2">
+                  {message.message_type === 'image' && <ImageIcon className="w-4 h-4" />}
+                  {message.message_type === 'video' && <Video className="w-4 h-4" />}
+                  {message.message_type === 'file' && <FileText className="w-4 h-4" />}
+                  <span className="text-sm">{message.metadata?.filename || 'Dosya'}</span>
+                  {message.metadata?.file_url && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => handleDownloadFile(message.metadata.file_url, message.metadata.filename)}
+                      className="h-6 px-2"
+                    >
+                      <Download className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            )}
-            
-            {message.message_type === 'video' && (
-              <div className="flex items-center gap-2">
-                <Video className="w-4 h-4" />
-                <span className="text-sm">{message.metadata?.filename || 'Video'}</span>
-              </div>
-            )}
-            
-            {message.message_type === 'file' && (
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                <span className="text-sm">{message.metadata?.filename || 'Dosya'}</span>
-              </div>
-            )}
-            
-            {message.message_type === 'sticker' && message.metadata?.sticker_url && (
-              <img src={BACKEND_URL + message.metadata.sticker_url} alt="sticker" className="w-32 h-32 object-contain" />
-            )}
-            
-            {message.message_type === 'text' && (
-              <p className="text-sm break-words">{message.content}</p>
             )}
             
             <div className="flex items-center justify-between gap-2 mt-1">
               <p className="text-xs opacity-70">
-                {new Date(message.timestamp).toLocaleTimeString('tr-TR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {new Date(message.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                 {message.edited && ' (düzenlendi)'}
               </p>
             </div>
             
             {message.reactions && Object.keys(message.reactions).length > 0 && (
               <div className="flex gap-1 mt-1 flex-wrap">
-                {Object.entries(message.reactions).map(([emoji, users]) => (
-                  users.length > 0 && (
+                {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                  userIds.length > 0 && (
                     <span
                       key={emoji}
                       className="text-xs bg-slate-700/50 px-2 py-0.5 rounded-full cursor-pointer hover:bg-slate-700"
                       onClick={() => handleReaction(message.id, emoji)}
                     >
-                      {emoji} {users.length}
+                      {emoji} {userIds.length}
                     </span>
                   )
                 ))}
               </div>
             )}
             
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 right-0 flex gap-1">
-              <button
-                onClick={() => handleReaction(message.id, '👍')}
-                className="p-1 bg-slate-800 rounded hover:bg-slate-700 text-xs"
-              >
-                👍
-              </button>
-              <button
-                onClick={() => handleReaction(message.id, '❤️')}
-                className="p-1 bg-slate-800 rounded hover:bg-slate-700 text-xs"
-              >
-                ❤️
-              </button>
-              <button
-                onClick={() => handleReaction(message.id, '😂')}
-                className="p-1 bg-slate-800 rounded hover:bg-slate-700 text-xs"
-              >
-                😂
-              </button>
-              <button
-                onClick={() => handlePinMessage(message.id)}
-                className="p-1 bg-slate-800 rounded hover:bg-slate-700"
-              >
-                <Pin className="w-3 h-3" />
-              </button>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 right-0 flex gap-1 bg-slate-900 rounded-lg p-1">
+              <button onClick={() => handleReaction(message.id, '👍')} className="p-1 hover:bg-slate-700 rounded text-xs">👍</button>
+              <button onClick={() => handleReaction(message.id, '❤️')} className="p-1 hover:bg-slate-700 rounded text-xs">❤️</button>
+              <button onClick={() => handleReaction(message.id, '😂')} className="p-1 hover:bg-slate-700 rounded text-xs">😂</button>
+              <button onClick={() => setReplyingTo(message)} className="p-1 hover:bg-slate-700 rounded"><Reply className="w-3 h-3" /></button>
+              <button onClick={() => handlePinMessage(message.id)} className="p-1 hover:bg-slate-700 rounded"><Pin className="w-3 h-3" /></button>
             </div>
           </div>
         </div>
@@ -457,52 +503,32 @@ export default function ChatInterface({ user, onLogout }) {
 
   return (
     <div className="h-screen bg-[#020617] flex flex-col md:flex-row overflow-hidden">
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
-        accept={messageType === 'image' ? 'image/*' : messageType === 'video' ? 'video/*' : '*'}
-      />
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
 
-      <div
-        className={`${showSidebar ? 'block' : 'hidden'} md:block w-full md:w-80 bg-slate-950/50 border-r border-slate-800/50 flex flex-col`}
-      >
+      {/* Sidebar */}
+      <div className={`${showSidebar ? 'block' : 'hidden'} md:block w-full md:w-80 bg-slate-950/50 border-r border-slate-800/50 flex flex-col`}>
         <div className="p-4 border-b border-slate-800/50">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10 border-2 border-[#22c55e] cursor-pointer" onClick={() => setShowProfile(true)}>
                 <AvatarImage src={user.profile_picture ? BACKEND_URL + user.profile_picture : null} />
-                <AvatarFallback className="bg-slate-800">
-                  {user.username[0].toUpperCase()}
-                </AvatarFallback>
+                <AvatarFallback className="bg-slate-800">{user.username[0].toUpperCase()}</AvatarFallback>
               </Avatar>
               <div>
                 <h2 className="text-lg font-bold text-slate-100 heading-font">{user.username}</h2>
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                  <div className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
                   <span className="text-xs text-slate-400">Çevrimiçi</span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
               {user.role === 'admin' && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowNAS(true)}
-                  className="text-slate-400 hover:text-slate-200"
-                >
+                <Button size="sm" variant="ghost" onClick={() => setShowNAS(true)} className="text-slate-400">
                   <HardDrive className="w-4 h-4" />
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleLogout}
-                data-testid="chat-logout-button"
-                className="text-slate-400 hover:text-red-400"
-              >
+              <Button size="sm" variant="ghost" onClick={handleLogout} className="text-slate-400 hover:text-red-400">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
@@ -518,64 +544,76 @@ export default function ChatInterface({ user, onLogout }) {
             />
           </div>
 
-          <Dialog open={showNewConversation} onOpenChange={setShowNewConversation}>
-            <DialogTrigger asChild>
-              <Button data-testid="new-conversation-button" className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a] font-medium">
-                <Plus className="w-4 h-4 mr-2" />
-                Yeni Konuşma
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-800">
-              <DialogHeader>
-                <DialogTitle className="text-slate-100">Yeni Konuşma Başlat</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                  <SelectTrigger data-testid="select-user-trigger" className="bg-slate-800 border-slate-700">
+          <div className="flex gap-2">
+            <Dialog open={showNewConversation} onOpenChange={setShowNewConversation}>
+              <DialogTrigger asChild>
+                <Button className="flex-1 bg-[#22c55e] text-black hover:bg-[#16a34a] font-medium">
+                  <Plus className="w-4 h-4 mr-2" />Yeni Chat
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-slate-900 border-slate-800">
+                <DialogHeader><DialogTitle className="text-slate-100">Yeni Konuşma</DialogTitle></DialogHeader>
+                <Select value={selectedUserIds[0] || ''} onValueChange={(val) => setSelectedUserIds([val])}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700">
                     <SelectValue placeholder="Kullanıcı seçin" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-6 h-6">
-                            <AvatarImage src={u.profile_picture ? BACKEND_URL + u.profile_picture : null} />
-                            <AvatarFallback className="text-xs bg-slate-700">
-                              {u.username[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          {u.username}
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {users.map(u => <SelectItem key={u.id} value={u.id}>{u.username}</SelectItem>)}
                   </SelectContent>
                 </Select>
-              </div>
-              <DialogFooter>
-                <Button
-                  onClick={handleCreateConversation}
-                  data-testid="create-conversation-button"
-                  className="bg-[#22c55e] text-black hover:bg-[#16a34a]"
-                >
-                  Oluştur
+                <DialogFooter>
+                  <Button onClick={() => handleCreateConversation(false)} className="bg-[#22c55e] text-black">Oluştur</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={showNewGroup} onOpenChange={setShowNewGroup}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-slate-700">
+                  <Users className="w-4 h-4" />
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="bg-slate-900 border-slate-800">
+                <DialogHeader><DialogTitle className="text-slate-100">Yeni Grup Oluştur</DialogTitle></DialogHeader>
+                <Input 
+                  placeholder="Grup adı" 
+                  value={groupName} 
+                  onChange={(e) => setGroupName(e.target.value)}
+                  className="bg-slate-800 border-slate-700"
+                />
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {users.map(u => (
+                    <label key={u.id} className="flex items-center gap-2 p-2 hover:bg-slate-800 rounded cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedUserIds.includes(u.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUserIds([...selectedUserIds, u.id]);
+                          } else {
+                            setSelectedUserIds(selectedUserIds.filter(id => id !== u.id));
+                          }
+                        }}
+                      />
+                      <span className="text-slate-300">{u.username}</span>
+                    </label>
+                  ))}
+                </div>
+                <DialogFooter>
+                  <Button onClick={() => handleCreateConversation(true)} className="bg-[#22c55e] text-black">Oluştur</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-2">
-            {filteredConversations.map((conv) => (
+            {filteredConversations.map(conv => (
               <motion.div
                 key={conv.id}
                 whileHover={{ x: 4 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setSelectedConversation(conv);
-                  setShowSidebar(false);
-                }}
-                data-testid={`conversation-${conv.id}`}
+                onClick={() => { setSelectedConversation(conv); setShowSidebar(false); }}
                 className={`p-3 rounded-lg cursor-pointer transition-all ${
                   selectedConversation?.id === conv.id
                     ? 'bg-slate-800 border-l-4 border-[#22c55e]'
@@ -585,17 +623,13 @@ export default function ChatInterface({ user, onLogout }) {
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10 border border-slate-700">
                     <AvatarFallback className="bg-slate-700">
-                      {getOtherParticipants(conv)[0].toUpperCase()}
+                      {conv.is_group ? '👥' : getOtherParticipants(conv)[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-100 text-sm truncate">
-                      {getOtherParticipants(conv)}
-                    </p>
+                    <p className="font-medium text-slate-100 text-sm truncate">{getOtherParticipants(conv)}</p>
                     <p className="text-xs text-slate-500 mono-font">
-                      {conv.last_message_at
-                        ? new Date(conv.last_message_at).toLocaleDateString('tr-TR')
-                        : 'Yeni'}
+                      {conv.last_message_at ? new Date(conv.last_message_at).toLocaleDateString('tr-TR') : 'Yeni'}
                     </p>
                   </div>
                 </div>
@@ -607,22 +641,18 @@ export default function ChatInterface({ user, onLogout }) {
         <div className="p-3 border-t border-slate-800/50">
           <div className="flex items-center gap-2 text-xs text-slate-500 mono-font justify-center">
             <ShieldCheck className="w-4 h-4 text-[#22c55e]" />
-            <span>End-to-End Şifreli</span>
+            <span>E2E Şifreli</span>
           </div>
         </div>
       </div>
 
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-slate-950/30">
         {selectedConversation ? (
           <>
             <div className="glass-effect p-3 flex items-center justify-between border-b border-slate-800/50">
               <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSidebar(!showSidebar)}
-                  className="md:hidden text-slate-400"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setShowSidebar(!showSidebar)} className="md:hidden">
                   <Menu className="w-5 h-5" />
                 </Button>
                 <Lock className="w-5 h-5 text-[#22c55e]" />
@@ -632,20 +662,10 @@ export default function ChatInterface({ user, onLogout }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  data-testid="start-audio-call-button"
-                  className="text-slate-400 hover:text-[#22c55e]"
-                >
+                <Button size="sm" variant="ghost" onClick={() => handleStartCall('audio')} className="text-slate-400 hover:text-[#22c55e]">
                   <Phone className="w-5 h-5" />
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  data-testid="start-video-call-button"
-                  className="text-slate-400 hover:text-[#22c55e]"
-                >
+                <Button size="sm" variant="ghost" onClick={() => handleStartCall('video')} className="text-slate-400 hover:text-[#22c55e]">
                   <VideoIcon className="w-5 h-5" />
                 </Button>
               </div>
@@ -655,16 +675,12 @@ export default function ChatInterface({ user, onLogout }) {
               <div className="space-y-2">
                 {messages.map(renderMessage)}
                 {typingUser && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-xs text-slate-500 italic flex items-center gap-2"
-                  >
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-slate-500 italic flex items-center gap-2">
                     <span>{typingUser} yazıyor</span>
                     <span className="flex gap-1">
-                      <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1 }}>.</motion.span>
-                      <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}>.</motion.span>
-                      <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}>.</motion.span>
+                      <motion.span animate={{ opacity: [0,1,0] }} transition={{ repeat: Infinity, duration: 1 }}>.</motion.span>
+                      <motion.span animate={{ opacity: [0,1,0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}>.</motion.span>
+                      <motion.span animate={{ opacity: [0,1,0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}>.</motion.span>
                     </span>
                   </motion.div>
                 )}
@@ -673,101 +689,65 @@ export default function ChatInterface({ user, onLogout }) {
             </ScrollArea>
 
             <div className="glass-effect p-3 border-t border-slate-800/50">
-              {selectedFile && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-2 flex items-center gap-2 p-2 bg-slate-800 rounded-lg"
-                >
-                  <Paperclip className="w-4 h-4 text-[#22c55e]" />
-                  <span className="text-sm text-slate-300 flex-1 truncate">{selectedFile.name}</span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedFile(null)}
-                    className="text-slate-400 hover:text-red-400 h-6 w-6 p-0"
-                  >
+              {replyingTo && (
+                <div className="mb-2 p-2 bg-slate-800 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Reply className="w-4 h-4 text-[#22c55e]" />
+                    <span className="text-sm text-slate-300">↩️ {replyingTo.content.substring(0, 30)}...</span>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>
                     <X className="w-4 h-4" />
                   </Button>
-                </motion.div>
+                </div>
+              )}
+              {selectedFile && (
+                <div className="mb-2 flex items-center gap-2 p-2 bg-slate-800 rounded-lg">
+                  <Paperclip className="w-4 h-4 text-[#22c55e]" />
+                  <span className="text-sm text-slate-300 flex-1 truncate">{selectedFile.name}</span>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedFile(null)}><X className="w-4 h-4" /></Button>
+                </div>
+              )}
+              {recording && (
+                <div className="mb-2 p-2 bg-red-900/20 rounded-lg flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-sm text-slate-300">Kayıt ediliyor... {recordingTime}s</span>
+                  <Button size="sm" onClick={stopVoiceRecording} className="ml-auto bg-red-600">Durdur</Button>
+                </div>
               )}
               <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleFileSelect('image')}
-                    data-testid="attach-image-button"
-                    className="text-slate-400 hover:text-[#22c55e] h-8 w-8 p-0"
-                  >
-                    <ImageIcon className="w-4 h-4" />
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')} className="h-8 w-8 p-0">
+                    <ImageIcon className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleFileSelect('video')}
-                    data-testid="attach-video-button"
-                    className="text-slate-400 hover:text-[#22c55e] h-8 w-8 p-0"
-                  >
-                    <Video className="w-4 h-4" />
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')} className="h-8 w-8 p-0">
+                    <Video className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleFileSelect('file')}
-                    data-testid="attach-file-button"
-                    className="text-slate-400 hover:text-[#22c55e] h-8 w-8 p-0"
-                  >
-                    <FileText className="w-4 h-4" />
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')} className="h-8 w-8 p-0">
+                    <FileText className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleSendLocation}
-                    data-testid="send-location-button"
-                    className="text-slate-400 hover:text-[#22c55e] h-8 w-8 p-0"
-                  >
-                    <MapPin className="w-4 h-4" />
+                  <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation} className="h-8 w-8 p-0">
+                    <MapPin className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={startRecording}
-                    data-testid="record-audio-button"
-                    className="text-slate-400 hover:text-[#22c55e] h-8 w-8 p-0"
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={recording ? stopVoiceRecording : startVoiceRecording}
+                    className={`h-8 w-8 p-0 ${recording ? 'text-red-500' : 'text-slate-400'}`}
                   >
                     <Mic className="w-4 h-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setShowStickers(true)}
-                    className="text-slate-400 hover:text-[#22c55e] h-8 w-8 p-0"
-                  >
-                    <Smile className="w-4 h-4" />
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)} className="h-8 w-8 p-0">
+                    <Smile className="w-4 h-4 text-slate-400" />
                   </Button>
                 </div>
                 <Input
                   value={messageInput}
-                  onChange={(e) => {
-                    setMessageInput(e.target.value);
-                    handleTyping();
-                  }}
-                  data-testid="message-input"
+                  onChange={(e) => { setMessageInput(e.target.value); handleTyping(); }}
                   placeholder="Mesaj yazın..."
-                  className="flex-1 bg-slate-900/50 border-slate-800 focus:border-[#22c55e] focus:ring-1 focus:ring-[#22c55e]/50 h-10"
+                  className="flex-1 bg-slate-900/50 border-slate-800 h-10"
                 />
-                <Button
-                  type="submit"
-                  data-testid="send-message-button"
-                  className="bg-[#22c55e] text-black hover:bg-[#16a34a] secure-glow h-10 w-10 p-0"
-                >
+                <Button type="submit" className="bg-[#22c55e] text-black hover:bg-[#16a34a] h-10 w-10 p-0">
                   <Send className="w-4 h-4" />
                 </Button>
               </form>
@@ -778,25 +758,18 @@ export default function ChatInterface({ user, onLogout }) {
             <div className="text-center">
               <MessageSquare className="w-20 h-20 text-slate-700 mx-auto mb-4" />
               <p className="text-slate-500 text-lg">Bir konuşma seçin</p>
-              <p className="text-slate-600 text-sm mt-2">veya yeni bir tane oluşturun</p>
             </div>
           </div>
         )}
       </div>
 
       {showProfile && <ProfileModal user={user} onClose={() => setShowProfile(false)} config={config} />}
-      {showStickers && (
-        <StickerPicker
-          onClose={() => setShowStickers(false)}
-          onSelectSticker={(sticker) => {
-            setMessageType('sticker');
-            setMessageInput(sticker.name);
-            setShowStickers(false);
-          }}
-          config={config}
-        />
-      )}
+      {viewingProfile && <ProfileModal user={viewingProfile} onClose={() => setViewingProfile(null)} config={config} viewOnly />}
+      {showStickers && <StickerPicker onClose={() => setShowStickers(false)} onSelectSticker={(s) => { setMessageInput(s.emoji || s.name); setShowStickers(false); }} config={config} />}
       {showNAS && <NASModal onClose={() => setShowNAS(false)} user={user} config={config} />}
+      {showVideoCall && selectedConversation && (
+        <VideoCallModal conversation={selectedConversation} user={user} socket={socket} onClose={() => setShowVideoCall(false)} />
+      )}
     </div>
   );
 }
