@@ -83,3 +83,4 @@ frontend/node_modules/.cache/default-development/0.pack
 # Environment files
 *.env
 *.env.*
+backend/uploads/nas/76953386-5f6f-410a-b45f-67a891289ebe_arduino-ide_2.3.7_Linux_64bit.AppImage
