@@ -131,47 +131,53 @@ class SecureCommsAPITester:
             print(f"   Found {len(response)} users")
         return success
 
-    def test_create_conversation(self, participant_usernames):
-        """Create a conversation"""
+    def test_find_user_and_create_conversation(self, target_username, security_passphrase):
+        """Find user by code and create conversation (this is how the app works)"""
         if not self.user_token:
             print("❌ No user token available")
             return False
             
-        # First get user IDs from usernames
         headers = {'Authorization': f'Bearer {self.user_token}'}
-        users_success, users_response = self.run_test(
-            "Get Users for Conversation",
-            "GET",
-            "users",
-            200,
-            headers=headers
-        )
         
-        if not users_success:
-            return False
-            
-        # Find participant IDs
-        participant_ids = []
-        for user in users_response:
-            if user['username'] in participant_usernames:
-                participant_ids.append(user['id'])
+        # Use form data for find-user endpoint
+        url = f"{self.base_url}/conversations/find-user"
         
-        if not participant_ids:
-            print(f"❌ Could not find users: {participant_usernames}")
-            return False
+        self.tests_run += 1
+        print(f"\n🔍 Testing Find User and Create Conversation...")
+        print(f"   URL: {url}")
+        
+        try:
+            # Send as form data
+            response = requests.post(
+                url, 
+                data={
+                    'username_or_code': target_username,
+                    'security_word': security_passphrase
+                },
+                headers={'Authorization': f'Bearer {self.user_token}'}
+            )
             
-        success, response = self.run_test(
-            "Create Conversation",
-            "POST",
-            "conversations",
-            200,
-            data=participant_ids,
-            headers=headers
-        )
-        if success:
-            self.conversation_id = response.get('id')
-            print(f"   Conversation created: {self.conversation_id}")
-        return success
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                try:
+                    user_data = response.json()
+                    print(f"   Found user: {user_data.get('username', 'Unknown')}")
+                    print(f"   User code: {user_data.get('user_code', 'No code')}")
+                    return True, user_data
+                except:
+                    return True, {}
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                try:
+                    print(f"   Response: {response.json()}")
+                except:
+                    print(f"   Response: {response.text}")
+                return False, {}
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, {}
 
     def test_send_message(self, content):
         """Send a message to the conversation"""
