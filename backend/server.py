@@ -541,8 +541,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount Socket.IO
-socket_app = socketio.ASGIApp(sio, app)
+# Mount Socket.IO - this becomes the main app to export
+app = socketio.ASGIApp(sio, app)
 
 # Configure logging
 logging.basicConfig(
