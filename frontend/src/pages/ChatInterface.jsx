@@ -145,7 +145,13 @@ export default function ChatInterface({ user, onLogout }) {
   }, [selectedConversation]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Mesajlar değiştiğinde HEMEN en alta git
+    if (messages.length > lastMessageCount) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100);
+      setLastMessageCount(messages.length);
+    }
   }, [messages]);
 
   const scrollToBottom = () => {
