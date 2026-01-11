@@ -481,9 +481,19 @@ export default function ChatInterface({ user, onLogout }) {
                   <img 
                     src={BACKEND_URL + message.metadata.file_url} 
                     alt="shared" 
-                    className="max-w-xs rounded-lg cursor-pointer"
+                    style={{ maxWidth: '200px', maxHeight: '200px', width: 'auto', height: 'auto' }}
+                    className="rounded-lg cursor-pointer object-contain"
                     onClick={() => window.open(BACKEND_URL + message.metadata.file_url, '_blank')}
                   />
+                )}
+                {message.message_type === 'video' && message.metadata?.file_url && (
+                  <video 
+                    controls
+                    style={{ maxWidth: '250px', maxHeight: '250px' }}
+                    className="rounded-lg"
+                  >
+                    <source src={BACKEND_URL + message.metadata.file_url} />
+                  </video>
                 )}
                 <div className="flex items-center gap-2">
                   {message.message_type === 'image' && <ImageIcon className="w-4 h-4" />}
