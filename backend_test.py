@@ -236,6 +236,26 @@ class SecureCommsAPITester:
             print(f"❌ Failed - Error: {str(e)}")
             return False
 
+    def test_create_conversation(self, participant_ids):
+        """Create a conversation with specific participants"""
+        if not self.user_token:
+            print("❌ No user token available")
+            return False
+            
+        headers = {'Authorization': f'Bearer {self.user_token}'}
+        success, response = self.run_test(
+            "Create Conversation",
+            "POST",
+            "conversations",
+            200,
+            data=participant_ids,
+            headers=headers
+        )
+        if success:
+            self.conversation_id = response.get('id')
+            print(f"   Conversation created with ID: {self.conversation_id}")
+        return success
+
     def test_get_conversations(self):
         """Get conversations for current user"""
         if not self.user_token:
@@ -255,6 +275,8 @@ class SecureCommsAPITester:
             print(f"   Found {len(response)} conversations")
             print(f"   Using conversation ID: {self.conversation_id}")
         return success
+
+    def test_get_messages(self):
         """Get messages from conversation"""
         if not self.user_token or not self.conversation_id:
             print("❌ No user token or conversation ID available")
