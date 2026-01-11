@@ -70,6 +70,7 @@ class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     username: str
+    user_code: Optional[str] = None
     role: str = "user"
     profile_picture: Optional[str] = None
     bio: Optional[str] = None
