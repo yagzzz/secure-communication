@@ -171,11 +171,16 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return User(**user_doc)
 
-def sanitize_input(text: str) -> str:
-    """Basic XSS protection"""
-    if not text:
-        return text
-    return text.replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;')
+def generate_user_code():
+    """Generate unique 5-digit KURD code"""
+    import hashlib
+    import time
+    # Use timestamp + random for uniqueness
+    unique_string = f"{time.time()}{os.urandom(8).hex()}"
+    hash_digest = hashlib.sha256(unique_string.encode()).hexdigest()
+    # Extract 5 digits from hash
+    digits = ''.join([c for c in hash_digest if c.isdigit()])[:5]
+    return f"KURD{digits}"
 
 # ==================== AUTH ROUTES ====================
 
