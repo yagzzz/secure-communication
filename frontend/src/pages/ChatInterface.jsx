@@ -49,11 +49,13 @@ export default function ChatInterface({ user, onLogout }) {
   const [recordingTime, setRecordingTime] = useState(0);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [viewingProfile, setViewingProfile] = useState(null);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const recordingIntervalRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
 
   const token = localStorage.getItem('token');
   const config = { headers: { Authorization: `Bearer ${token}` } };
