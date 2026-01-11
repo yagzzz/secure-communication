@@ -606,13 +606,15 @@ async def delete_nas_file(file_id: str, current_user: User = Depends(get_current
 
 @api_router.get("/files/profiles/{filename}")
 async def get_profile_picture(filename: str):
+    """Public access - no auth required"""
     filepath = PROFILE_PICS_DIR / filename
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(filepath)
 
 @api_router.get("/files/uploads/{filename}")
-async def get_uploaded_file(filename: str, current_user: User = Depends(get_current_user)):
+async def get_uploaded_file(filename: str):
+    """Public access - no auth required for uploaded files"""
     filepath = FILES_DIR / filename
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="File not found")
@@ -620,6 +622,7 @@ async def get_uploaded_file(filename: str, current_user: User = Depends(get_curr
 
 @api_router.get("/files/stickers/{filename}")
 async def get_sticker(filename: str):
+    """Public access - no auth required"""
     filepath = STICKERS_DIR / filename
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="File not found")
