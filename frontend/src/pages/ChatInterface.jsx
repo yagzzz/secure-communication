@@ -783,11 +783,12 @@ export default function ChatInterface({ user, onLogout }) {
                 <Input
                   value={messageInput}
                   onChange={(e) => { setMessageInput(e.target.value); handleTyping(); }}
+                  onPaste={handlePaste}
                   placeholder="Mesaj yazın..."
-                  className="flex-1 bg-slate-900/50 border-slate-800 h-10"
+                  className="message-input flex-1 bg-slate-900/50 border-slate-800"
                 />
-                <Button type="submit" className="bg-[#22c55e] text-black hover:bg-[#16a34a] h-10 w-10 p-0">
-                  <Send className="w-4 h-4" />
+                <Button type="submit" className="send-button bg-[#22c55e] text-black hover:bg-[#16a34a]">
+                  <Send className="w-5 h-5" />
                 </Button>
               </form>
             </div>
