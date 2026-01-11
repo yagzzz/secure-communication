@@ -182,6 +182,12 @@ def generate_user_code():
     digits = ''.join([c for c in hash_digest if c.isdigit()])[:5]
     return f"KURD{digits}"
 
+def sanitize_input(text: str) -> str:
+    """Basic XSS protection"""
+    if not text:
+        return text
+    return text.replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;')
+
 # ==================== AUTH ROUTES ====================
 
 @api_router.post("/auth/register", response_model=User)
@@ -193,7 +199,12 @@ async def register(user_data: UserCreate, current_user: User = Depends(get_curre
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists")
     
-    user = User(username=sanitize_input(user_data.username), role=user_data.role)
+    user_code = generate_user_code()
+    # Ensure unique code
+    while await db.users.find_one({"user_code": user_code}):
+        user_code = generate_user_code()
+    
+    user = User(username=sanitize_input(user_data.username), role=user_data.role, user_code=user_code)
     
     doc = user.model_dump()
     doc['hashed_password'] = get_password_hash(user_data.password)
