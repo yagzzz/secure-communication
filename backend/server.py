@@ -101,6 +101,7 @@ class Message(BaseModel):
     pinned: bool = False
     edited: bool = False
     reactions: Optional[Dict[str, List[str]]] = None
+    read_by: List[str] = []
 
 class Conversation(BaseModel):
     model_config = ConfigDict(extra="ignore")
