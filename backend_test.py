@@ -347,6 +347,7 @@ def main():
     
     # Print user KURD code for testing
     print(f"🔑 User1 KURD Code: {user_data.get('user_code', 'Not found')}")
+    user1_id = user_data.get('id')
 
     # Test 4: Get users list
     if not tester.test_get_users():
@@ -360,11 +361,29 @@ def main():
         return 1
     
     print(f"🔑 User2 KURD Code: {found_user.get('user_code', 'Not found')}")
+    user2_id = found_user.get('id')
 
-    # Test 6: Get conversations (should be empty due to backend bug)
-    tester.test_get_conversations()
+    # Test 6: Create conversation directly
+    if not tester.test_create_conversation([user1_id, user2_id]):
+        print("❌ Conversation creation failed")
+        return 1
 
-    # Test 7: Admin metadata
+    # Test 7: Get conversations
+    if not tester.test_get_conversations():
+        print("❌ Get conversations failed")
+        return 1
+
+    # Test 8: Send a message
+    if not tester.test_send_message("Hello from backend test! This is a test message."):
+        print("❌ Send message failed")
+        return 1
+
+    # Test 9: Get messages
+    if not tester.test_get_messages():
+        print("❌ Get messages failed")
+        return 1
+
+    # Test 10: Admin metadata
     if not tester.test_admin_metadata():
         print("❌ Admin metadata failed")
         return 1
@@ -373,14 +392,12 @@ def main():
     print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
-    # Print critical issues found
-    print("\n🚨 CRITICAL BACKEND ISSUES FOUND:")
-    print("1. ❌ Conversation creation is broken - unreachable code in find_user_by_code endpoint")
-    print("2. ❌ No direct conversation creation endpoint exists")
-    print("3. ❌ Real-time messaging cannot be tested without conversations")
-    
-    if tester.tests_passed >= 7:  # Most basic functionality works
-        print("🟡 Basic backend APIs work, but conversation system is broken")
+    # Check for critical issues
+    if tester.tests_passed >= 9:  # Most functionality works
+        print("✅ Backend APIs are working correctly!")
+        print("🔑 Test user credentials for frontend testing:")
+        print(f"   User1: {user1} / test123 (KURD: {user_data.get('user_code', 'Not found')})")
+        print(f"   User2: {user2} / test123 (KURD: {found_user.get('user_code', 'Not found')})")
         return 0
     else:
         print(f"❌ {tester.tests_run - tester.tests_passed} tests failed")
