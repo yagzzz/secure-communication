@@ -179,19 +179,36 @@ class SecureCommsAPITester:
             print("❌ No user token or conversation ID available")
             return False
             
+        url = f"{self.base_url}/conversations/{self.conversation_id}/messages"
         headers = {'Authorization': f'Bearer {self.user_token}'}
-        # Remove Content-Type for form data
-        form_headers = {k: v for k, v in headers.items() if k != 'Content-Type'}
         
-        success, response = self.run_test(
-            f"Send Message: '{content[:30]}...'",
-            "POST",
-            f"conversations/{self.conversation_id}/messages",
-            200,
-            data={'content': content, 'message_type': 'text'},
-            headers=form_headers
-        )
-        return success
+        self.tests_run += 1
+        print(f"\n🔍 Testing Send Message: '{content[:30]}...'")
+        print(f"   URL: {url}")
+        
+        try:
+            # Send as form data
+            response = requests.post(
+                url, 
+                data={'content': content, 'message_type': 'text'},
+                headers=headers
+            )
+            
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                return True
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                try:
+                    print(f"   Response: {response.json()}")
+                except:
+                    print(f"   Response: {response.text}")
+                return False
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
 
     def test_get_messages(self):
         """Get messages from conversation"""
