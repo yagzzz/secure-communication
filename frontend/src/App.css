@@ -1,34 +1,59 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+  min-height: 100vh;
+  background: #020617;
+  color: #f8fafc;
+  font-family: 'Inter', sans-serif;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.heading-font {
+  font-family: 'Manrope', sans-serif;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.mono-font {
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.App-link {
-    color: #61dafb;
+.secure-glow {
+  box-shadow: 0 0 20px -5px rgba(34, 197, 94, 0.3);
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.glass-effect {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+button {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.message-bubble {
+  animation: messageAppear 0.3s ease-out;
+}
+
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.5);
 }
