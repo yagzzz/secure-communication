@@ -252,6 +252,11 @@ def main():
     print("🚀 Starting Secure Communications API Tests")
     print("=" * 60)
     
+    # Use timestamp to create unique usernames
+    timestamp = datetime.now().strftime("%H%M%S")
+    user1 = f"testuser1_{timestamp}"
+    user2 = f"testuser2_{timestamp}"
+    
     tester = SecureCommsAPITester()
     
     # Test 1: Admin Login
@@ -260,16 +265,16 @@ def main():
         return 1
 
     # Test 2: Create test users
-    if not tester.test_create_user("testuser1", "test123", "secure1", "user"):
+    if not tester.test_create_user(user1, "test123", "secure1", "user"):
         print("❌ User creation failed")
         return 1
         
-    if not tester.test_create_user("testuser2", "test123", "secure2", "user"):
+    if not tester.test_create_user(user2, "test123", "secure2", "user"):
         print("❌ Second user creation failed")
         return 1
 
     # Test 3: User login
-    user_success, user_data = tester.test_user_login("testuser1", "test123")
+    user_success, user_data = tester.test_user_login(user1, "test123")
     if not user_success:
         print("❌ User login failed")
         return 1
@@ -280,7 +285,7 @@ def main():
         return 1
 
     # Test 5: Create conversation
-    if not tester.test_create_conversation(["testuser2"]):
+    if not tester.test_create_conversation([user2]):
         print("❌ Conversation creation failed")
         return 1
 
