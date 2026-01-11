@@ -147,14 +147,14 @@ class SecureCommsAPITester:
         print(f"   URL: {url}")
         
         try:
-            # Send as form data
+            # Send as query parameters
             response = requests.post(
                 url, 
-                data={
+                params={
                     'username_or_code': target_username,
                     'security_word': security_passphrase
                 },
-                headers={'Authorization': f'Bearer {self.user_token}'}
+                headers=headers
             )
             
             success = response.status_code == 200
