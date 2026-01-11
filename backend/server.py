@@ -306,8 +306,30 @@ async def get_conversations(current_user: User = Depends(get_current_user)):
     
     return conversations
 
-@api_router.post("/conversations", response_model=Conversation)
-async def create_conversation(participant_ids: List[str], current_user: User = Depends(get_current_user)):
+@api_router.post("/conversations/find-user")
+async def find_user_by_code(username_or_code: str, security_word: str, current_user: User = Depends(get_current_user)):
+    """Find user by username+code or just code with security passphrase"""
+    user_doc = await db.users.find_one(
+        {"$or": [
+            {"username": username_or_code},
+            {"user_code": username_or_code}
+        ]},
+        {"_id": 0, "hashed_password": 0}
+    )
+    
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    # Verify security passphrase
+    if not verify_password(security_word, user_doc.get('security_passphrase_hash', '')):
+        raise HTTPException(status_code=401, detail="Güvenlik kelimesi yanlış")
+    
+    if isinstance(user_doc.get('created_at'), str):
+        user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    if user_doc.get('last_seen') and isinstance(user_doc['last_seen'], str):
+        user_doc['last_seen'] = datetime.fromisoformat(user_doc['last_seen'])
+    
+    return User(**user_doc)
     if current_user.id not in participant_ids:
         participant_ids.append(current_user.id)
     
