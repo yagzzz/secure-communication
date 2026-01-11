@@ -479,6 +479,15 @@ async def edit_message(message_id: str, content: str, current_user: User = Depen
     
     return {"message": "Message updated"}
 
+@api_router.post("/messages/{message_id}/read")
+async def mark_as_read(message_id: str, current_user: User = Depends(get_current_user)):
+    """Mark message as read"""
+    await db.messages.update_one(
+        {"id": message_id},
+        {"$addToSet": {"read_by": current_user.id}}
+    )
+    return {"success": True}
+
 @api_router.post("/messages/{message_id}/react")
 async def react_to_message(message_id: str, emoji: str, current_user: User = Depends(get_current_user)):
     message = await db.messages.find_one({"id": message_id}, {"_id": 0})
