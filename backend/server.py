@@ -202,6 +202,36 @@ class Sticker(BaseModel):
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== ENCRYPTION HELPERS ====================
+
+def encrypt_message(content: str) -> str:
+    """Encrypt message content using Fernet symmetric encryption"""
+    if not content:
+        return content
+    try:
+        return fernet.encrypt(content.encode()).decode()
+    except Exception as e:
+        logger.error(f"Encryption error: {e}")
+        return content
+
+def decrypt_message(encrypted_content: str) -> str:
+    """Decrypt message content"""
+    if not encrypted_content:
+        return encrypted_content
+    try:
+        return fernet.decrypt(encrypted_content.encode()).decode()
+    except Exception as e:
+        # Return as-is if not encrypted (backwards compatibility)
+        return encrypted_content
+
+def generate_conversation_key() -> str:
+    """Generate a unique encryption key for conversation"""
+    return base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+
+def hash_file_content(content: bytes) -> str:
+    """Generate SHA-256 hash of file content for integrity verification"""
+    return hashlib.sha256(content).hexdigest()
+
 # ==================== HELPERS ====================
 
 def verify_password(plain_password, hashed_password):
