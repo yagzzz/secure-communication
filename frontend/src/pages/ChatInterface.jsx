@@ -465,13 +465,16 @@ export default function ChatInterface({ user, onLogout }) {
               </div>
             )}
             {message.message_type === 'audio' && (
-              <div className="flex items-center gap-2">
-                <Mic className="w-4 h-4" />
-                <span className="text-sm">Sesli mesaj</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  <span className="text-sm">Sesli mesaj</span>
+                </div>
                 {message.metadata?.file_url && (
-                  <Button size="sm" variant="ghost" onClick={() => handleDownloadFile(message.metadata.file_url, 'voice.webm')}>
-                    <Download className="w-3 h-3" />
-                  </Button>
+                  <audio controls style={{ maxWidth: '250px', height: '40px' }}>
+                    <source src={BACKEND_URL + message.metadata.file_url} type="audio/webm" />
+                    <source src={BACKEND_URL + message.metadata.file_url} type="audio/mp3" />
+                  </audio>
                 )}
               </div>
             )}
