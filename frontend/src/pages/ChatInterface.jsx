@@ -805,38 +805,26 @@ export default function ChatInterface({ user, onLogout }) {
                 </Button>
               </form>
               
-              {/* AKSİYON BUTONLARI - Input altında */}
-              <div className="flex items-center justify-around py-1">
-                <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
-                  <ImageIcon className="w-5 h-5 text-blue-400" />
-                  <span className="text-[10px] text-slate-500 hidden sm:block">Resim</span>
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
-                  <Video className="w-5 h-5 text-purple-400" />
-                  <span className="text-[10px] text-slate-500 hidden sm:block">Video</span>
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
-                  <FileText className="w-5 h-5 text-yellow-400" />
-                  <span className="text-[10px] text-slate-500 hidden sm:block">Dosya</span>
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
-                  <MapPin className="w-5 h-5 text-green-400" />
-                  <span className="text-[10px] text-slate-500 hidden sm:block">Konum</span>
-                </Button>
-                <Button 
-                  type="button" 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={recording ? stopVoiceRecording : startVoiceRecording}
-                  className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${recording ? 'text-red-500' : ''}`}
-                >
-                  <Mic className={`w-5 h-5 ${recording ? 'text-red-500 animate-pulse' : 'text-red-400'}`} />
-                  <span className="text-[10px] text-slate-500 hidden sm:block">Ses</span>
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
-                  <Smile className="w-5 h-5 text-yellow-400" />
-                  <span className="text-[10px] text-slate-500 hidden sm:block">Emoji</span>
-                </Button>
+              {/* AKSİYON BUTONLARI */}
+              <div className="flex items-center justify-around py-2 border-t border-slate-800">
+                <button type="button" onClick={() => handleFileSelect('image')} className="flex flex-col items-center p-2">
+                  <ImageIcon style={{color: '#3b82f6'}} className="w-6 h-6" />
+                </button>
+                <button type="button" onClick={() => handleFileSelect('video')} className="flex flex-col items-center p-2">
+                  <Video style={{color: '#a855f7'}} className="w-6 h-6" />
+                </button>
+                <button type="button" onClick={() => handleFileSelect('file')} className="flex flex-col items-center p-2">
+                  <FileText style={{color: '#eab308'}} className="w-6 h-6" />
+                </button>
+                <button type="button" onClick={handleSendLocation} className="flex flex-col items-center p-2">
+                  <MapPin style={{color: '#22c55e'}} className="w-6 h-6" />
+                </button>
+                <button type="button" onClick={recording ? stopVoiceRecording : startVoiceRecording} className="flex flex-col items-center p-2">
+                  <Mic style={{color: recording ? '#ef4444' : '#f87171'}} className={`w-6 h-6 ${recording ? 'animate-pulse' : ''}`} />
+                </button>
+                <button type="button" onClick={() => setShowStickers(true)} className="flex flex-col items-center p-2">
+                  <Smile style={{color: '#fbbf24'}} className="w-6 h-6" />
+                </button>
               </div>
             </div>
           </>
