@@ -144,19 +144,21 @@ export default function ChatInterface({ user, onLogout }) {
     };
   }, [selectedConversation]);
 
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'auto', 
+        block: 'end',
+        inline: 'nearest'
+      });
+    }
+  };
+
   useEffect(() => {
     // Mesajlar değiştiğinde HEMEN en alta git
-    if (messages.length > lastMessageCount) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 100);
-      setLastMessageCount(messages.length);
-    }
+    scrollToBottom();
+    setLastMessageCount(messages.length);
   }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const fetchUsers = async () => {
     try {
