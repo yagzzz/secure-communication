@@ -691,6 +691,118 @@ async def get_admin_metadata(current_user: User = Depends(get_current_user)):
         "conversation_metadata": conversation_metadata
     }
 
+# ==================== CALL ROUTES (HTTP-based signaling) ====================
+
+class CallSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    conversation_id: str
+    caller_id: str
+    caller_username: str
+    call_type: str  # 'audio' or 'video'
+    status: str = "pending"  # pending, accepted, rejected, ended
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    signal_data: Optional[Dict[str, Any]] = None
+    answer_data: Optional[Dict[str, Any]] = None
+    ice_candidates: List[Dict[str, Any]] = []
+
+@api_router.post("/calls/start")
+async def start_call(conversation_id: str = Form(...), call_type: str = Form("audio"), current_user: User = Depends(get_current_user)):
+    """Start a new call"""
+    conversation = await db.conversations.find_one(
+        {"id": conversation_id, "participants": current_user.id}, {"_id": 0}
+    )
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # End any existing pending calls
+    await db.calls.update_many(
+        {"conversation_id": conversation_id, "status": "pending"},
+        {"$set": {"status": "ended"}}
+    )
+    
+    call = CallSession(
+        conversation_id=conversation_id,
+        caller_id=current_user.id,
+        caller_username=current_user.username,
+        call_type=call_type
+    )
+    
+    doc = call.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.calls.insert_one(doc)
+    
+    return {"call_id": call.id, "status": "pending"}
+
+@api_router.get("/calls/pending/{conversation_id}")
+async def get_pending_call(conversation_id: str, current_user: User = Depends(get_current_user)):
+    """Check for pending incoming calls"""
+    call = await db.calls.find_one(
+        {
+            "conversation_id": conversation_id,
+            "status": "pending",
+            "caller_id": {"$ne": current_user.id}
+        },
+        {"_id": 0}
+    )
+    if call:
+        if isinstance(call.get('created_at'), str):
+            call['created_at'] = datetime.fromisoformat(call['created_at'])
+    return call
+
+@api_router.post("/calls/{call_id}/signal")
+async def send_signal(call_id: str, signal_data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Send WebRTC signal data"""
+    await db.calls.update_one(
+        {"id": call_id},
+        {"$set": {"signal_data": signal_data}}
+    )
+    return {"success": True}
+
+@api_router.post("/calls/{call_id}/answer")
+async def answer_call(call_id: str, answer_data: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Answer a call with WebRTC answer"""
+    await db.calls.update_one(
+        {"id": call_id},
+        {"$set": {"status": "accepted", "answer_data": answer_data}}
+    )
+    return {"success": True}
+
+@api_router.get("/calls/{call_id}/status")
+async def get_call_status(call_id: str, current_user: User = Depends(get_current_user)):
+    """Get call status and signal data"""
+    call = await db.calls.find_one({"id": call_id}, {"_id": 0})
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    return call
+
+@api_router.post("/calls/{call_id}/ice")
+async def add_ice_candidate(call_id: str, candidate: Dict[str, Any], current_user: User = Depends(get_current_user)):
+    """Add ICE candidate"""
+    await db.calls.update_one(
+        {"id": call_id},
+        {"$push": {"ice_candidates": {"user_id": current_user.id, "candidate": candidate}}}
+    )
+    return {"success": True}
+
+@api_router.post("/calls/{call_id}/end")
+async def end_call(call_id: str, current_user: User = Depends(get_current_user)):
+    """End a call"""
+    await db.calls.update_one(
+        {"id": call_id},
+        {"$set": {"status": "ended"}}
+    )
+    return {"success": True}
+
+@api_router.post("/calls/{call_id}/reject")
+async def reject_call(call_id: str, current_user: User = Depends(get_current_user)):
+    """Reject a call"""
+    await db.calls.update_one(
+        {"id": call_id},
+        {"$set": {"status": "rejected"}}
+    )
+    return {"success": True}
+
 # ==================== SOCKET.IO EVENTS ====================
 
 @sio.event
