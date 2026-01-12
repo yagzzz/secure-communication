@@ -702,7 +702,7 @@ export default function ChatInterface({ user, onLogout }) {
       <div className="flex-1 flex flex-col bg-slate-950/30">
         {selectedConversation ? (
           <>
-            <div className="glass-effect p-3 flex items-center justify-between border-b border-slate-800/50">
+            <div className="chat-header glass-effect p-3 flex items-center justify-between border-b border-slate-800/50">
               <div className="flex items-center gap-3">
                 <Button variant="ghost" size="sm" onClick={() => setShowSidebar(!showSidebar)} className="md:hidden">
                   <Menu className="w-5 h-5" />
