@@ -53,18 +53,35 @@ export default function VideoCallModal({ conversation, user, onClose, incomingCa
   // Initialize media stream
   const initMedia = async (videoOn = true) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const constraints = {
         video: videoOn,
         audio: true,
-      });
-      setLocalStream(stream);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+      };
+      
+      // İlk önce hem video hem ses dene
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        setLocalStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        return stream;
+      } catch (videoError) {
+        // Video başarısız olursa sadece ses dene
+        console.log('Video failed, trying audio only:', videoError);
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          setLocalStream(audioStream);
+          setVideoEnabled(false);
+          toast.info('Sadece sesli arama - kamera erişimi yok');
+          return audioStream;
+        } catch (audioError) {
+          throw audioError;
+        }
       }
-      return stream;
     } catch (error) {
       console.error('Media error:', error);
-      toast.error('Kamera/mikrofon erişimi reddedildi');
+      toast.error('Kamera/mikrofon erişimi reddedildi. Tarayıcı ayarlarından izin verin.');
       return null;
     }
   };
