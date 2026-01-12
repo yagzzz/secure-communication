@@ -18,6 +18,7 @@ import ProfileModal from '@/components/ProfileModal';
 import StickerPicker from '@/components/StickerPicker';
 import NASModal from '@/components/NASModal';
 import VideoCallModal from '@/components/VideoCallModal';
+import MobileMenu from '@/components/MobileMenu';
 import { requestNotificationPermission, notifyNewMessage, notifyIncomingCall } from '@/utils/notifications';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
