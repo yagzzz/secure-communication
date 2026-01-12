@@ -478,9 +478,13 @@ async def get_messages(conversation_id: str, current_user: User = Depends(get_cu
         {"conversation_id": conversation_id}, {"_id": 0}
     ).sort("timestamp", 1).to_list(1000)
     
+    # Decrypt messages
     for msg in messages:
         if isinstance(msg.get('timestamp'), str):
             msg['timestamp'] = datetime.fromisoformat(msg['timestamp'])
+        # Decrypt content if encrypted
+        if msg.get('encrypted', False) and msg.get('content'):
+            msg['content'] = decrypt_message(msg['content'])
     
     return messages
 
@@ -500,10 +504,12 @@ async def send_message(
         raise HTTPException(status_code=404, detail="Conversation not found")
     
     file_url = None
+    file_hash = None
     if file:
+        content_data = await file.read()
+        file_hash = hash_file_content(content_data)  # Integrity check
         file_path = FILES_DIR / f"{uuid.uuid4()}_{file.filename}"
         async with aiofiles.open(file_path, 'wb') as out_file:
-            content_data = await file.read()
             await out_file.write(content_data)
         file_url = f"/api/files/uploads/{file_path.name}"
     
@@ -511,16 +517,20 @@ async def send_message(
     if file_url:
         metadata_dict['file_url'] = file_url
         metadata_dict['filename'] = file.filename
+        metadata_dict['file_hash'] = file_hash
     
+    # Sanitize and encrypt content
     sanitized_content = sanitize_input(content) if message_type == "text" else content
+    encrypted_content = encrypt_message(sanitized_content)
     
     message = Message(
         conversation_id=conversation_id,
         sender_id=current_user.id,
         sender_username=current_user.username,
-        content=sanitized_content,
+        content=encrypted_content,
         message_type=message_type,
-        metadata=metadata_dict
+        metadata=metadata_dict,
+        encrypted=True
     )
     
     doc = message.model_dump()
@@ -531,6 +541,9 @@ async def send_message(
         {"id": conversation_id},
         {"$set": {"last_message_at": datetime.now(timezone.utc).isoformat()}}
     )
+    
+    # Return decrypted content for immediate display
+    message.content = sanitized_content
     
     await sio.emit('new_message', message.model_dump(mode='json'), room=conversation_id)
     
