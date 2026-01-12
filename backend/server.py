@@ -283,10 +283,15 @@ def generate_user_code():
     return f"KURD{digits}"
 
 def sanitize_input(text: str) -> str:
-    """Basic XSS protection"""
+    """Basic XSS protection - sanitize but preserve readability"""
     if not text:
         return text
-    return text.replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;')
+    # Remove dangerous HTML tags but keep content readable
+    dangerous_tags = ['<script', '</script', '<iframe', '</iframe', 'javascript:', 'onerror=', 'onload=']
+    result = text
+    for tag in dangerous_tags:
+        result = result.replace(tag, '')
+    return result
 
 # ==================== AUTH ROUTES ====================
 
