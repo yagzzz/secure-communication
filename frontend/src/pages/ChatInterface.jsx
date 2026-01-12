@@ -740,7 +740,7 @@ export default function ChatInterface({ user, onLogout }) {
               </div>
             </ScrollArea>
 
-            <div className="glass-effect p-3 border-t border-slate-800/50">
+            <div className="message-input-container glass-effect p-3 border-t border-slate-800/50">
               {replyingTo && (
                 <div className="mb-2 p-2 bg-slate-800 rounded-lg flex items-center justify-between">
                   <div className="flex items-center gap-2">
