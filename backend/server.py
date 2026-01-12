@@ -1,8 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Form, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -18,6 +19,12 @@ import base64
 import aiofiles
 import json
 import shutil
+import hashlib
+import hmac
+import secrets
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -28,12 +35,74 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Security
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = os.environ.get("SECRET_KEY", "your-secret-key-change-this-in-production-2025")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=14)
+SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_urlsafe(64))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 
+# Encryption key for message content (derived from SECRET_KEY)
+ENCRYPTION_SALT = b'secure_chat_encryption_2025'
+kdf = PBKDF2HMAC(
+    algorithm=hashes.SHA256(),
+    length=32,
+    salt=ENCRYPTION_SALT,
+    iterations=480000,
+)
+FERNET_KEY = base64.urlsafe_b64encode(kdf.derive(SECRET_KEY.encode()))
+fernet = Fernet(FERNET_KEY)
+
 security = HTTPBearer()
+
+# Rate limiting storage
+rate_limit_storage: Dict[str, List[datetime]] = {}
+
+# ==================== SECURITY MIDDLEWARE ====================
+
+class SecurityMiddleware(BaseHTTPMiddleware):
+    """Advanced security middleware with rate limiting and request validation"""
+    
+    async def dispatch(self, request: Request, call_next):
+        # Get client IP
+        client_ip = request.client.host if request.client else "unknown"
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+        
+        # Rate limiting (100 requests per minute per IP)
+        now = datetime.now(timezone.utc)
+        minute_ago = now - timedelta(minutes=1)
+        
+        if client_ip not in rate_limit_storage:
+            rate_limit_storage[client_ip] = []
+        
+        # Clean old entries
+        rate_limit_storage[client_ip] = [
+            t for t in rate_limit_storage[client_ip] 
+            if t > minute_ago
+        ]
+        
+        # Check rate limit
+        if len(rate_limit_storage[client_ip]) >= 100:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Please wait."}
+            )
+        
+        rate_limit_storage[client_ip].append(now)
+        
+        # Add security headers
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:;"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(self), microphone=(self), camera=(self)"
+        
+        return response
+
+from starlette.responses import JSONResponse
 
 # File storage paths
 UPLOAD_DIR = Path("/app/backend/uploads")
