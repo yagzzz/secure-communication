@@ -31,73 +31,20 @@ button:active {
   transform: scale(0.98);
 }
 
-/* Message Input - Responsive */
-.message-input {
-  font-size: 16px;
-  min-height: 44px;
-  height: 44px;
-  padding: 10px 16px;
-  border-radius: 12px;
+/* Safe area for iPhone notch/home indicator */
+.safe-area-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
-/* Desktop */
-@media (min-width: 769px) {
-  .message-input {
-    font-size: 16px;
-    min-height: 48px;
-    height: 48px;
-  }
-  
-  .send-button {
-    min-width: 48px;
-    min-height: 48px;
-  }
+/* Message Input Container */
+.message-input-container {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: #0f172a;
 }
 
-/* Mobile - Daha temiz ve kullanışlı */
-@media (max-width: 768px) {
-  .message-input-container {
-    padding: 12px !important;
-    background: #0f172a !important;
-  }
-  
-  .message-input {
-    font-size: 16px !important;
-    min-height: 48px !important;
-    height: 48px !important;
-    padding: 12px 16px !important;
-    flex: 1 !important;
-  }
-  
-  .send-button {
-    min-width: 48px !important;
-    min-height: 48px !important;
-    width: 48px !important;
-    height: 48px !important;
-    flex-shrink: 0 !important;
-    border-radius: 12px !important;
-  }
-  
-  .chat-header {
-    padding: 12px !important;
-    min-height: 60px !important;
-  }
-  
-  /* Mobile images - responsive */
-  img {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-  
-  /* Mesaj balonları içindeki medya */
-  .rounded-2xl img,
-  .rounded-2xl video {
-    max-width: 220px !important;
-    max-height: 220px !important;
-    border-radius: 8px !important;
-  }
-}
-
+/* Message bubble animation */
 .message-bubble {
   animation: messageAppear 0.3s ease-out;
 }
@@ -122,7 +69,7 @@ input:focus,
 textarea:focus {
   outline: none !important;
   border-color: #22c55e !important;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3) !important;
 }
 
 .media-preview {
@@ -159,4 +106,62 @@ video {
 .unread-tick {
   color: #64748b;
   font-size: 14px;
+}
+
+/* Chat header mobile fix */
+.chat-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  /* Fix for mobile viewport height */
+  .h-screen {
+    height: 100dvh;
+  }
+  
+  /* Chat header */
+  .chat-header {
+    padding: 10px 12px !important;
+    min-height: 56px;
+  }
+  
+  /* Message input container */
+  .message-input-container {
+    padding: 8px 12px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+  
+  /* Messages area - limit image size */
+  .rounded-2xl img,
+  .rounded-2xl video {
+    max-width: 200px !important;
+    max-height: 200px !important;
+    border-radius: 8px !important;
+  }
+  
+  /* Sidebar hide completely when chat selected */
+  .md\\:block {
+    display: none;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
