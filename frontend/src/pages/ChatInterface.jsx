@@ -146,20 +146,21 @@ export default function ChatInterface({ user, onLogout }) {
   }, [selectedConversation]);
 
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ 
-        behavior: 'auto', 
-        block: 'end',
-        inline: 'nearest'
-      });
-    }
+    // requestAnimationFrame ile daha güvenilir scroll
+    requestAnimationFrame(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    });
   };
 
   useEffect(() => {
-    // Mesajlar değiştiğinde HEMEN en alta git
-    scrollToBottom();
+    // Mesaj sayısı değiştiğinde scroll
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
     setLastMessageCount(messages.length);
-  }, [messages]);
+  }, [messages.length]);
 
   const fetchUsers = async () => {
     try {
@@ -182,9 +183,17 @@ export default function ChatInterface({ user, onLogout }) {
   const fetchMessages = async (conversationId) => {
     try {
       const response = await axios.get(`${API}/conversations/${conversationId}/messages`, config);
-      setMessages(response.data);
+      // Sadece yeni mesaj varsa güncelle (gereksiz render'ı önle)
+      setMessages(prev => {
+        const newData = response.data;
+        if (JSON.stringify(prev.map(m => m.id)) !== JSON.stringify(newData.map(m => m.id))) {
+          return newData;
+        }
+        return prev;
+      });
     } catch (error) {
-      toast.error('❌ Mesajlar yüklenemedi');
+      // Sessiz hata - polling'de sürekli toast gösterme
+      console.error('Mesaj yükleme hatası:', error);
     }
   };
 
@@ -770,17 +779,29 @@ export default function ChatInterface({ user, onLogout }) {
                 </div>
               )}
               <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                <div className="action-buttons flex items-center gap-1">
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')} className="mobile-button">
+                {/* Mobile: 3-nokta menü, Desktop: Tüm butonlar */}
+                <div className="md:hidden">
+                  <MobileMenu
+                    onImageSelect={() => handleFileSelect('image')}
+                    onVideoSelect={() => handleFileSelect('video')}
+                    onFileSelect={() => handleFileSelect('file')}
+                    onLocationSend={handleSendLocation}
+                    onVoiceRecord={recording ? stopVoiceRecording : startVoiceRecording}
+                    onStickerOpen={() => setShowStickers(true)}
+                    recording={recording}
+                  />
+                </div>
+                <div className="hidden md:flex action-buttons items-center gap-1">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')}>
                     <ImageIcon className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')} className="mobile-button">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')}>
                     <Video className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')} className="mobile-button">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')}>
                     <FileText className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation} className="mobile-button">
+                  <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation}>
                     <MapPin className="w-4 h-4 text-slate-400" />
                   </Button>
                   <Button 
@@ -788,11 +809,11 @@ export default function ChatInterface({ user, onLogout }) {
                     size="sm" 
                     variant="ghost" 
                     onClick={recording ? stopVoiceRecording : startVoiceRecording}
-                    className={`mobile-button ${recording ? 'text-red-500' : 'text-slate-400'}`}
+                    className={recording ? 'text-red-500' : 'text-slate-400'}
                   >
                     <Mic className="w-4 h-4" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)} className="mobile-button">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)}>
                     <Smile className="w-4 h-4 text-slate-400" />
                   </Button>
                 </div>
