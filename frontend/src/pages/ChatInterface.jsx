@@ -723,27 +723,27 @@ export default function ChatInterface({ user, onLogout }) {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-slate-950/30">
+      <div className="flex-1 flex flex-col bg-slate-950/30 min-h-0">
         {selectedConversation ? (
           <>
-            <div className="chat-header glass-effect p-3 flex items-center justify-between border-b border-slate-800/50">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={() => setShowSidebar(!showSidebar)} className="md:hidden">
-                  <Menu className="w-5 h-5" />
-                </Button>
-                <Lock className="w-5 h-5 text-[#22c55e]" />
+            <div className="bg-slate-900 p-3 flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowSidebar(true)} className="md:hidden p-1">
+                  <Menu style={{color: '#94a3b8'}} className="w-5 h-5" />
+                </button>
+                <Lock style={{color: '#22c55e'}} className="w-5 h-5" />
                 <div>
-                  <h3 className="font-semibold text-slate-100">{getOtherParticipants(selectedConversation)}</h3>
-                  <p className="text-xs text-slate-400">Şifrelenmiş mesajlaşma</p>
+                  <h3 className="font-semibold text-white text-sm">{getOtherParticipants(selectedConversation)}</h3>
+                  <p className="text-xs text-slate-400">Şifrelenmiş</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" onClick={() => handleStartCall('audio')} className="text-slate-400 hover:text-[#22c55e]">
-                  <Phone className="w-5 h-5" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleStartCall('video')} className="text-slate-400 hover:text-[#22c55e]">
-                  <VideoIcon className="w-5 h-5" />
-                </Button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => handleStartCall('audio')} className="p-2">
+                  <Phone style={{color: '#94a3b8'}} className="w-5 h-5" />
+                </button>
+                <button onClick={() => handleStartCall('video')} className="p-2">
+                  <VideoIcon style={{color: '#94a3b8'}} className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
