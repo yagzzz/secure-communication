@@ -764,7 +764,7 @@ export default function ChatInterface({ user, onLogout }) {
               </div>
             </ScrollArea>
 
-            <div className="message-input-container glass-effect p-3 border-t border-slate-800/50">
+            <div className="message-input-container bg-slate-950 border-t border-slate-800/50 p-3 safe-area-bottom">
               {replyingTo && (
                 <div className="mb-2 p-2 bg-slate-800 rounded-lg flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -790,56 +790,54 @@ export default function ChatInterface({ user, onLogout }) {
                   <Button size="sm" onClick={stopVoiceRecording} className="ml-auto bg-red-600">Durdur</Button>
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                {/* Mobile: 3-nokta menü, Desktop: Tüm butonlar */}
-                <div className="md:hidden">
-                  <MobileMenu
-                    onImageSelect={() => handleFileSelect('image')}
-                    onVideoSelect={() => handleFileSelect('video')}
-                    onFileSelect={() => handleFileSelect('file')}
-                    onLocationSend={handleSendLocation}
-                    onVoiceRecord={recording ? stopVoiceRecording : startVoiceRecording}
-                    onStickerOpen={() => setShowStickers(true)}
-                    recording={recording}
-                  />
-                </div>
-                <div className="hidden md:flex action-buttons items-center gap-1">
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')}>
-                    <ImageIcon className="w-4 h-4 text-slate-400" />
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')}>
-                    <Video className="w-4 h-4 text-slate-400" />
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')}>
-                    <FileText className="w-4 h-4 text-slate-400" />
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation}>
-                    <MapPin className="w-4 h-4 text-slate-400" />
-                  </Button>
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={recording ? stopVoiceRecording : startVoiceRecording}
-                    className={recording ? 'text-red-500' : 'text-slate-400'}
-                  >
-                    <Mic className="w-4 h-4" />
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)}>
-                    <Smile className="w-4 h-4 text-slate-400" />
-                  </Button>
-                </div>
+              
+              {/* INPUT ALANI - Her zaman görünür */}
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2 mb-2">
                 <Input
                   value={messageInput}
                   onChange={(e) => { setMessageInput(e.target.value); handleTyping(); }}
                   onPaste={handlePaste}
                   placeholder="Mesaj yazın..."
-                  className="message-input flex-1 bg-slate-900/50 border-slate-800"
+                  className="flex-1 h-12 text-base bg-slate-900 border-slate-700 rounded-xl px-4"
                 />
-                <Button type="submit" className="send-button bg-[#22c55e] text-black hover:bg-[#16a34a]">
+                <Button type="submit" className="h-12 w-12 rounded-xl bg-[#22c55e] text-black hover:bg-[#16a34a] flex-shrink-0">
                   <Send className="w-5 h-5" />
                 </Button>
               </form>
+              
+              {/* AKSİYON BUTONLARI - Input altında */}
+              <div className="flex items-center justify-around py-1">
+                <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                  <ImageIcon className="w-5 h-5 text-blue-400" />
+                  <span className="text-[10px] text-slate-500 hidden sm:block">Resim</span>
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                  <Video className="w-5 h-5 text-purple-400" />
+                  <span className="text-[10px] text-slate-500 hidden sm:block">Video</span>
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                  <FileText className="w-5 h-5 text-yellow-400" />
+                  <span className="text-[10px] text-slate-500 hidden sm:block">Dosya</span>
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                  <MapPin className="w-5 h-5 text-green-400" />
+                  <span className="text-[10px] text-slate-500 hidden sm:block">Konum</span>
+                </Button>
+                <Button 
+                  type="button" 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={recording ? stopVoiceRecording : startVoiceRecording}
+                  className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${recording ? 'text-red-500' : ''}`}
+                >
+                  <Mic className={`w-5 h-5 ${recording ? 'text-red-500 animate-pulse' : 'text-red-400'}`} />
+                  <span className="text-[10px] text-slate-500 hidden sm:block">Ses</span>
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)} className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                  <Smile className="w-5 h-5 text-yellow-400" />
+                  <span className="text-[10px] text-slate-500 hidden sm:block">Emoji</span>
+                </Button>
+              </div>
             </div>
           </>
         ) : (
