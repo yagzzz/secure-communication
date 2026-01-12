@@ -51,6 +51,7 @@ export default function ChatInterface({ user, onLogout }) {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [lastMessageCount, setLastMessageCount] = useState(0);
+  const [incomingCall, setIncomingCall] = useState(null);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -372,18 +373,29 @@ export default function ChatInterface({ user, onLogout }) {
 
   const handleStartCall = async (callType) => {
     if (!selectedConversation) return;
-
-    try {
-      await axios.post(`${API}/calls/start`, {
-        conversation_id: selectedConversation.id,
-        call_type: callType,
-      }, config);
-      setShowVideoCall(true);
-      toast.success(`📞 ${callType === 'video' ? 'Görüntülü' : 'Sesli'} arama başlatıldı`);
-    } catch (error) {
-      toast.error('❌ Arama başlatılamadı');
-    }
+    setShowVideoCall(true);
   };
+
+  // Gelen aramaları kontrol et
+  useEffect(() => {
+    if (!selectedConversation) return;
+    
+    const checkIncomingCalls = async () => {
+      try {
+        const response = await axios.get(`${API}/calls/pending/${selectedConversation.id}`, config);
+        if (response.data && response.data.id && !showVideoCall) {
+          setIncomingCall(response.data);
+          notifyIncomingCall(response.data.caller_username, response.data.call_type);
+          setShowVideoCall(true);
+        }
+      } catch (error) {
+        // Sessiz hata
+      }
+    };
+
+    const callPollInterval = setInterval(checkIncomingCalls, 2000);
+    return () => clearInterval(callPollInterval);
+  }, [selectedConversation, showVideoCall]);
 
   const handleLogout = async () => {
     try {
@@ -845,7 +857,13 @@ export default function ChatInterface({ user, onLogout }) {
       {showStickers && <StickerPicker onClose={() => setShowStickers(false)} onSelectSticker={(s) => { setMessageInput(s.emoji || s.name); setShowStickers(false); }} config={config} />}
       {showNAS && <NASModal onClose={() => setShowNAS(false)} user={user} config={config} />}
       {showVideoCall && selectedConversation && (
-        <VideoCallModal conversation={selectedConversation} user={user} socket={socket} onClose={() => setShowVideoCall(false)} />
+        <VideoCallModal 
+          conversation={selectedConversation} 
+          user={user} 
+          socket={socket} 
+          incomingCall={incomingCall}
+          onClose={() => { setShowVideoCall(false); setIncomingCall(null); }} 
+        />
       )}
     </div>
   );
