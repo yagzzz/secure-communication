@@ -971,6 +971,9 @@ async def webrtc_ice_candidate(sid, data):
 
 app.include_router(api_router)
 
+# Add security middleware
+app.add_middleware(SecurityMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
