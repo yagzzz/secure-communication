@@ -767,17 +767,17 @@ export default function ChatInterface({ user, onLogout }) {
                 </div>
               )}
               <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')} className="h-8 w-8 p-0">
+                <div className="action-buttons flex items-center gap-1">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('image')} className="mobile-button">
                     <ImageIcon className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')} className="h-8 w-8 p-0">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('video')} className="mobile-button">
                     <Video className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')} className="h-8 w-8 p-0">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => handleFileSelect('file')} className="mobile-button">
                     <FileText className="w-4 h-4 text-slate-400" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation} className="h-8 w-8 p-0">
+                  <Button type="button" size="sm" variant="ghost" onClick={handleSendLocation} className="mobile-button">
                     <MapPin className="w-4 h-4 text-slate-400" />
                   </Button>
                   <Button 
@@ -785,11 +785,11 @@ export default function ChatInterface({ user, onLogout }) {
                     size="sm" 
                     variant="ghost" 
                     onClick={recording ? stopVoiceRecording : startVoiceRecording}
-                    className={`h-8 w-8 p-0 ${recording ? 'text-red-500' : 'text-slate-400'}`}
+                    className={`mobile-button ${recording ? 'text-red-500' : 'text-slate-400'}`}
                   >
                     <Mic className="w-4 h-4" />
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)} className="h-8 w-8 p-0">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowStickers(true)} className="mobile-button">
                     <Smile className="w-4 h-4 text-slate-400" />
                   </Button>
                 </div>
