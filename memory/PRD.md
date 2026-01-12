@@ -106,20 +106,26 @@ Signal'dan ilham alınmış yüksek güvenlikli, uçtan uca şifreli mesajlaşma
 - None remaining
 
 ### P1 (Important)
-- [ ] Okundu bildirimleri (read receipts) UI entegrasyonu
-- [ ] localStorage ile bildirim izni kaydetme
-- [ ] Grup sohbet gizlilik iyileştirmesi (KURD kodu ile kullanıcı arama)
+- [ ] Okundu bildirimleri (read receipts) - ✓✓ işaretleri
+- [ ] Disappearing Messages - Belirli süre sonra silinen mesajlar
+- [ ] Ses mesajı waveform görüntüsü
+- [ ] Link önizleme (URL preview)
 
 ### P2 (Nice to Have)
 - [ ] Kürdistan bayrağı sticker paketi
-- [ ] Anonim chatbot entegrasyonu
-- [ ] Profil fotoğrafı yükleme UI iyileştirmesi
-- [ ] Mesaj düzenleme UI
+- [ ] Anonim AI chatbot entegrasyonu
+- [ ] Ekran paylaşımı (görüntülü aramada)
+- [ ] Grup yönetimi - admin atama, kullanıcı çıkarma
+- [ ] Mesaj düzenleme/silme UI
+- [ ] Dosya sıkıştırma
 
-### P3 (Future)
+### P3 (Future/Advanced)
+- [ ] Multi-device sync - Birden fazla cihazda senkronizasyon
+- [ ] Backup/Restore - Sohbet yedeği
+- [ ] QR kod ile giriş
+- [ ] Biometric auth (parmak izi/yüz tanıma)
 - [ ] End-to-end video/audio encryption
-- [ ] Message self-destruct (disappearing messages)
-- [ ] Multi-device sync
+- [ ] Message forwarding
 
 ---
 
