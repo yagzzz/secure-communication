@@ -120,14 +120,19 @@ export default function VideoCallModal({ conversation, user, onClose, incomingCa
     }
 
     try {
-      // Create call on server
-      const formData = new FormData();
-      formData.append('conversation_id', conversation.id);
-      formData.append('call_type', 'video');
+      // Create call on server - URLSearchParams kullan
+      const params = new URLSearchParams();
+      params.append('conversation_id', conversation.id);
+      params.append('call_type', 'video');
       
-      const response = await axios.post(`${API}/calls/start`, formData, config);
+      const response = await axios.post(`${API}/calls/start`, params, {
+        ...config,
+        headers: { ...config.headers, 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
       const newCallId = response.data.call_id;
       setCallId(newCallId);
+      
+      toast.success('📞 Arama başlatılıyor...');
 
       // Create peer connection and offer
       const pc = createPeerConnection(stream, true);
