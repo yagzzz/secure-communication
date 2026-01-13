@@ -1,0 +1,53 @@
+[Unit]
+Description=EncrypTalk Secure Messaging Backend
+Documentation=https://github.com/yourusername/secure-communication
+After=network.target mongod.service
+Wants=mongod.service
+
+[Service]
+Type=notify
+User=encryptalk
+Group=encryptalk
+WorkingDirectory=/opt/encryptalk/backend
+
+# Environment variables
+Environment="PATH=/opt/encryptalk/backend/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+Environment="HOST=127.0.0.1"
+Environment="PORT=8001"
+Environment="WORKERS=4"
+Environment="LOG_LEVEL=info"
+
+# Load .env file
+EnvironmentFile=/opt/encryptalk/backend/.env
+
+# Process execution
+ExecStart=/opt/encryptalk/backend/venv/bin/python server.py
+
+# Process management
+Type=notify
+Restart=always
+RestartSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+SendSigKill=yes
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=65536
+MemoryLimit=1G
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=encryptalk-backend
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/encryptalk/backend/uploads
+
+[Install]
+WantedBy=multi-user.target

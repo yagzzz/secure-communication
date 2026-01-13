@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, MessageSquare, ShieldCheck, Plus, Trash2, LogOut, Eye, HardDrive } from 'lucide-react';
+import { Users, MessageSquare, ShieldCheck, Plus, Trash2, LogOut, Eye, HardDrive, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
 import { toast } from 'sonner';
 import NASModal from '@/components/NASModal';
+import AdminSettings from './AdminSettings';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
 export default function AdminDashboard({ user, onLogout }) {
@@ -176,6 +177,10 @@ export default function AdminDashboard({ user, onLogout }) {
               <TabsTrigger value="metadata" className="data-[state=active]:bg-[#22c55e] data-[state=active]:text-black">
                 Konuşma Metadata
               </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-[#22c55e] data-[state=active]:text-black">
+                <Settings className="w-4 h-4 mr-2" />
+                Ayarlar
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="mt-6">
@@ -326,6 +331,10 @@ export default function AdminDashboard({ user, onLogout }) {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <AdminSettings user={user} />
             </TabsContent>
           </Tabs>
         </div>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import axios from 'axios';
@@ -21,7 +22,7 @@ import VideoCallModal from '@/components/VideoCallModal';
 import MobileMenu from '@/components/MobileMenu';
 import { requestNotificationPermission, notifyNewMessage, notifyIncomingCall } from '@/utils/notifications';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
 export default function ChatInterface({ user, onLogout }) {
@@ -43,7 +44,6 @@ export default function ChatInterface({ user, onLogout }) {
   const [showStickers, setShowStickers] = useState(false);
   const [showNAS, setShowNAS] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSidebar, setShowSidebar] = useState(true);
   const [replyingTo, setReplyingTo] = useState(null);
   const [recording, setRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
@@ -52,6 +52,8 @@ export default function ChatInterface({ user, onLogout }) {
   const [viewingProfile, setViewingProfile] = useState(null);
   const [lastMessageCount, setLastMessageCount] = useState(0);
   const [incomingCall, setIncomingCall] = useState(null);
+  const [showSidebarSheet, setShowSidebarSheet] = useState(false);
+  const [showActionButtons, setShowActionButtons] = useState(false);
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -578,11 +580,11 @@ export default function ChatInterface({ user, onLogout }) {
   };
 
   return (
-    <div className="h-screen bg-[#020617] flex flex-col md:flex-row overflow-hidden">
+    <div className="h-[100dvh] bg-[#020617] flex flex-col lg:flex-row overflow-hidden">
       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
 
-      {/* Sidebar */}
-      <div className={`${showSidebar ? 'block' : 'hidden'} md:block w-full md:w-80 bg-slate-950/50 border-r border-slate-800/50 flex flex-col`}>
+      {/* Desktop Sidebar - Always visible on lg and above */}
+      <div className="hidden lg:flex w-80 bg-slate-950/50 border-r border-slate-800/50 flex-col">
         <div className="p-4 border-b border-slate-800/50">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -689,7 +691,7 @@ export default function ChatInterface({ user, onLogout }) {
               <motion.div
                 key={conv.id}
                 whileHover={{ x: 4 }}
-                onClick={() => { setSelectedConversation(conv); setShowSidebar(false); }}
+                onClick={() => { setSelectedConversation(conv); }}
                 className={`p-3 rounded-lg cursor-pointer transition-all ${
                   selectedConversation?.id === conv.id
                     ? 'bg-slate-800 border-l-4 border-[#22c55e]'
@@ -722,15 +724,169 @@ export default function ChatInterface({ user, onLogout }) {
         </div>
       </div>
 
+      {/* Tablet/Mobile Sidebar - Sheet Drawer on md screens and below */}
+      <Sheet open={showSidebarSheet} onOpenChange={setShowSidebarSheet}>
+        <div className="lg:hidden">
+          <SheetTrigger asChild>
+            <button className="fixed top-3 left-3 z-30 p-2 hover:bg-slate-800 rounded-lg lg:hidden">
+              <Menu className="w-6 h-6 text-slate-300" />
+            </button>
+          </SheetTrigger>
+        </div>
+        <SheetContent side="left" className="w-80 bg-slate-950/95 border-slate-800/50 p-0 duration-300">
+          <div className="h-full flex flex-col">
+            <div className="p-4 border-b border-slate-800/50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <Avatar className="w-10 h-10 border-2 border-[#22c55e] cursor-pointer" onClick={() => setShowProfile(true)}>
+                    <AvatarImage src={user.profile_picture ? BACKEND_URL + user.profile_picture : null} />
+                    <AvatarFallback className="bg-slate-800">{user.username[0].toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-100 heading-font">{user.username}</h2>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
+                      <span className="text-xs text-slate-400">Çevrimiçi</span>
+                    </div>
+                  </div>
+                </div>
+                <SheetClose asChild>
+                  <Button size="sm" variant="ghost" className="text-slate-400">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </SheetClose>
+              </div>
+              <div className="flex items-center gap-1">
+                {user.role === 'admin' && (
+                  <Button size="sm" variant="ghost" onClick={() => setShowNAS(true)} className="text-slate-400">
+                    <HardDrive className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={handleLogout} className="text-slate-400 hover:text-red-400">
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative px-4 py-3">
+              <Search className="absolute left-7 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Input
+                placeholder="Konuşma ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-slate-900/50 border-slate-800 text-sm"
+              />
+            </div>
+
+            <div className="flex gap-2 px-4 py-2">
+              <Dialog open={showNewConversation} onOpenChange={setShowNewConversation}>
+                <DialogTrigger asChild>
+                  <Button className="flex-1 bg-[#22c55e] text-black hover:bg-[#16a34a] font-medium">
+                    <Plus className="w-4 h-4 mr-2" />Yeni Chat
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-slate-900 border-slate-800">
+                  <DialogHeader><DialogTitle className="text-slate-100">Yeni Konuşma</DialogTitle></DialogHeader>
+                  <Select value={selectedUserIds[0] || ''} onValueChange={(val) => setSelectedUserIds([val])}>
+                    <SelectTrigger className="bg-slate-800 border-slate-700">
+                      <SelectValue placeholder="Kullanıcı seçin" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-800 border-slate-700">
+                      {users.map(u => <SelectItem key={u.id} value={u.id}>{u.username}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <DialogFooter>
+                    <Button onClick={() => handleCreateConversation(false)} className="bg-[#22c55e] text-black">Oluştur</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={showNewGroup} onOpenChange={setShowNewGroup}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="border-slate-700">
+                    <Users className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-slate-900 border-slate-800">
+                  <DialogHeader><DialogTitle className="text-slate-100">Yeni Grup Oluştur</DialogTitle></DialogHeader>
+                  <Input 
+                    placeholder="Grup adı" 
+                    value={groupName} 
+                    onChange={(e) => setGroupName(e.target.value)}
+                    className="bg-slate-800 border-slate-700"
+                  />
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {users.map(u => (
+                      <label key={u.id} className="flex items-center gap-2 p-2 hover:bg-slate-800 rounded cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedUserIds.includes(u.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUserIds([...selectedUserIds, u.id]);
+                            } else {
+                              setSelectedUserIds(selectedUserIds.filter(id => id !== u.id));
+                            }
+                          }}
+                        />
+                        <span className="text-slate-300">{u.username}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={() => handleCreateConversation(true)} className="bg-[#22c55e] text-black">Oluştur</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-2">
+                {filteredConversations.map(conv => (
+                  <motion.div
+                    key={conv.id}
+                    whileHover={{ x: 4 }}
+                    onClick={() => { setSelectedConversation(conv); setShowSidebarSheet(false); }}
+                    className={`p-3 rounded-lg cursor-pointer transition-all ${
+                      selectedConversation?.id === conv.id
+                        ? 'bg-slate-800 border-l-4 border-[#22c55e]'
+                        : 'bg-slate-900/50 hover:bg-slate-800/70 border-l-4 border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10 border border-slate-700">
+                        <AvatarFallback className="bg-slate-700">
+                          {conv.is_group ? '👥' : getOtherParticipants(conv)[0]?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-100 text-sm truncate">{getOtherParticipants(conv)}</p>
+                        <p className="text-xs text-slate-500 mono-font">
+                          {conv.last_message_at ? new Date(conv.last_message_at).toLocaleDateString('tr-TR') : 'Yeni'}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            <div className="p-3 border-t border-slate-800/50">
+              <div className="flex items-center gap-2 text-xs text-slate-500 mono-font justify-center">
+                <ShieldCheck className="w-4 h-4 text-[#22c55e]" />
+                <span>E2E Şifreli</span>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-slate-950/30 min-h-0">
         {selectedConversation ? (
           <>
             <div className="bg-slate-900 p-3 flex items-center justify-between border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
-                <button onClick={() => setShowSidebar(true)} className="md:hidden p-1">
-                  <Menu style={{color: '#94a3b8'}} className="w-5 h-5" />
-                </button>
                 <Lock style={{color: '#22c55e'}} className="w-5 h-5" />
                 <div>
                   <h3 className="font-semibold text-white text-sm">{getOtherParticipants(selectedConversation)}</h3>
@@ -764,7 +920,7 @@ export default function ChatInterface({ user, onLogout }) {
               </div>
             </ScrollArea>
 
-            <div className="message-input-container bg-slate-950 border-t border-slate-800/50 p-3 safe-area-bottom">
+            <div className="message-input-container bg-slate-950 border-t border-slate-800/50 p-2 safe-area-bottom sticky bottom-0 z-10">
               {replyingTo && (
                 <div className="mb-2 p-2 bg-slate-800 rounded-lg flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -791,41 +947,93 @@ export default function ChatInterface({ user, onLogout }) {
                 </div>
               )}
               
-              {/* INPUT ALANI - Her zaman görünür */}
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2 mb-2">
+              {/* WhatsApp-style Compact Input */}
+              <form onSubmit={handleSendMessage} className="flex items-center gap-1">
+                <Sheet open={showActionButtons} onOpenChange={setShowActionButtons}>
+                  <SheetTrigger asChild>
+                    <Button type="button" size="sm" variant="ghost" className="h-10 w-10 p-0 flex-shrink-0">
+                      <Plus className="w-5 h-5 text-slate-400" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="bg-slate-950/95 border-slate-800/50 rounded-t-2xl duration-300 max-h-[60vh]">
+                    <div className="w-full py-6">
+                      <h3 className="text-center text-slate-100 text-sm font-medium mb-4">Seçenekler</h3>
+                      <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => { handleFileSelect('image'); setShowActionButtons(false); }}
+                          className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800 transition-colors"
+                        >
+                          <ImageIcon className="w-8 h-8 text-blue-400" />
+                          <span className="text-xs text-slate-300">Resim</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => { handleFileSelect('video'); setShowActionButtons(false); }}
+                          className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800 transition-colors"
+                        >
+                          <Video className="w-8 h-8 text-purple-400" />
+                          <span className="text-xs text-slate-300">Video</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => { handleFileSelect('file'); setShowActionButtons(false); }}
+                          className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800 transition-colors"
+                        >
+                          <FileText className="w-8 h-8 text-yellow-400" />
+                          <span className="text-xs text-slate-300">Dosya</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => { handleSendLocation(); setShowActionButtons(false); }}
+                          className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800 transition-colors"
+                        >
+                          <MapPin className="w-8 h-8 text-green-400" />
+                          <span className="text-xs text-slate-300">Konum</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => { recording ? stopVoiceRecording() : startVoiceRecording(); setShowActionButtons(false); }}
+                          className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800 transition-colors"
+                        >
+                          <Mic className={`w-8 h-8 ${recording ? 'text-red-400 animate-pulse' : 'text-orange-400'}`} />
+                          <span className="text-xs text-slate-300">Ses</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                          onClick={() => { setShowStickers(true); setShowActionButtons(false); }}
+                          className="flex flex-col items-center gap-2 p-4 bg-slate-900/50 rounded-xl hover:bg-slate-800 transition-colors"
+                        >
+                          <Smile className="w-8 h-8 text-yellow-500" />
+                          <span className="text-xs text-slate-300">Stiker</span>
+                        </motion.button>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
                 <Input
                   value={messageInput}
                   onChange={(e) => { setMessageInput(e.target.value); handleTyping(); }}
                   onPaste={handlePaste}
-                  placeholder="Mesaj yazın..."
-                  className="flex-1 h-12 text-base bg-slate-900 border-slate-700 rounded-xl px-4"
+                  placeholder="Mesaj..."
+                  className="flex-1 h-10 text-sm bg-slate-900/70 border-slate-700 rounded-full px-4 focus:bg-slate-900"
                 />
-                <Button type="submit" className="h-12 w-12 rounded-xl bg-[#22c55e] text-black hover:bg-[#16a34a] flex-shrink-0">
-                  <Send className="w-5 h-5" />
+                <Button type="submit" size="sm" className="h-10 w-10 p-0 flex-shrink-0 rounded-full bg-[#22c55e] text-black hover:bg-[#16a34a] transition-colors">
+                  <Send className="w-4 h-4" />
                 </Button>
               </form>
-              
-              {/* AKSİYON BUTONLARI */}
-              <div className="flex items-center justify-around py-2 border-t border-slate-800">
-                <button type="button" onClick={() => handleFileSelect('image')} className="flex flex-col items-center p-2">
-                  <ImageIcon style={{color: '#3b82f6'}} className="w-6 h-6" />
-                </button>
-                <button type="button" onClick={() => handleFileSelect('video')} className="flex flex-col items-center p-2">
-                  <Video style={{color: '#a855f7'}} className="w-6 h-6" />
-                </button>
-                <button type="button" onClick={() => handleFileSelect('file')} className="flex flex-col items-center p-2">
-                  <FileText style={{color: '#eab308'}} className="w-6 h-6" />
-                </button>
-                <button type="button" onClick={handleSendLocation} className="flex flex-col items-center p-2">
-                  <MapPin style={{color: '#22c55e'}} className="w-6 h-6" />
-                </button>
-                <button type="button" onClick={recording ? stopVoiceRecording : startVoiceRecording} className="flex flex-col items-center p-2">
-                  <Mic style={{color: recording ? '#ef4444' : '#f87171'}} className={`w-6 h-6 ${recording ? 'animate-pulse' : ''}`} />
-                </button>
-                <button type="button" onClick={() => setShowStickers(true)} className="flex flex-col items-center p-2">
-                  <Smile style={{color: '#fbbf24'}} className="w-6 h-6" />
-                </button>
-              </div>
             </div>
           </>
         ) : (

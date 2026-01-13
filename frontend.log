@@ -1,0 +1,447 @@
+
+> frontend@0.1.0 start
+> craco start
+
+(node:45963) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:45963) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Failed to compile.
+
+Module not found: Error: Can't resolve './AdminSettings' in '/home/yagobaba/secure-communication/frontend/src/pages'
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+ERROR in ./src/pages/AdminDashboard.jsx 18:0-44
+Module not found: Error: Can't resolve './AdminSettings' in '/home/yagobaba/secure-communication/frontend/src/pages'
+
+webpack compiled with 1 error and 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Failed to compile.
+
+Module not found: Error: Can't resolve './AdminSettings' in '/home/yagobaba/secure-communication/frontend/src/pages'
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+ERROR in ./src/pages/AdminDashboard.jsx 18:0-44
+Module not found: Error: Can't resolve './AdminSettings' in '/home/yagobaba/secure-communication/frontend/src/pages'
+
+webpack compiled with 1 error and 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning
+Compiling...
+Compiled with warnings.
+
+[eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+WARNING in [eslint] 
+src/components/NASModal.jsx
+  Line 23:6:  React Hook useEffect has a missing dependency: 'fetchFiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/StickerPicker.jsx
+  Line 18:6:  React Hook useEffect has a missing dependency: 'fetchStickers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src/components/VideoCallModal.jsx
+  Line 344:6:  React Hook useEffect has missing dependencies: 'incomingCall' and 'startCall'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/AdminDashboard.jsx
+  Line 39:6:  React Hook React.useEffect has missing dependencies: 'fetchMetadata' and 'fetchUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+src/pages/ChatInterface.jsx
+  Line 72:6:   React Hook useEffect has missing dependencies: 'fetchConversations', 'fetchUsers', and 'initSocket'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  Line 149:6:  React Hook useEffect has missing dependencies: 'fetchMessages', 'socket', and 'user.id'. Either include them or remove the dependency array              react-hooks/exhaustive-deps
+  Line 400:6:  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                                                react-hooks/exhaustive-deps
+
+webpack compiled with 1 warning

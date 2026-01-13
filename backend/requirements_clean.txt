@@ -1,0 +1,42 @@
+# ============================================================
+# Core Backend Dependencies - Minimal Production Setup
+# ============================================================
+
+# Web Framework & ASGI Server
+fastapi==0.110.1
+uvicorn[standard]==0.25.0
+starlette==0.37.2
+
+# Database
+motor==3.3.2
+pymongo==4.6.0
+
+# Security & Authentication
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.5.0
+cryptography==46.0.3
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Real-time Communication
+python-socketio==5.10.0
+python-engineio==4.8.0
+
+# Environment & Configuration
+python-dotenv==1.0.0
+
+# HTTP & API Utilities
+httpx==0.28.1
+aiofiles==25.1.0
+
+# Email (for future notifications)
+# python-multipart==0.0.6
+
+# ============================================================
+# Development & Optional Dependencies (uncomment as needed)
+# ============================================================
+
+# pytest==7.4.3          # Testing
+# black==25.12.0         # Code formatting
+# flake8==7.3.0          # Linting
+# isort==7.0.0           # Import sorting

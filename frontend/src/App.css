@@ -36,6 +36,13 @@ button:active {
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
+.safe-area-inset {
+  padding: max(12px, env(safe-area-inset-top)) 
+           max(12px, env(safe-area-inset-right)) 
+           max(12px, env(safe-area-inset-bottom)) 
+           max(12px, env(safe-area-inset-left));
+}
+
 /* Message Input Container */
 .message-input-container {
   position: sticky;
@@ -117,8 +124,9 @@ video {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  /* Fix for mobile viewport height */
-  .h-screen {
+  /* Fix for mobile viewport height - use 100dvh (dynamic viewport height) */
+  .h-screen,
+  .h-\\[100dvh\\] {
     height: 100dvh;
   }
   
@@ -137,14 +145,9 @@ video {
   /* Messages area - limit image size */
   .rounded-2xl img,
   .rounded-2xl video {
-    max-width: 200px !important;
+    max-width: 90vw !important;
     max-height: 200px !important;
     border-radius: 8px !important;
-  }
-  
-  /* Sidebar hide completely when chat selected */
-  .md\\:block {
-    display: none;
   }
 }
 

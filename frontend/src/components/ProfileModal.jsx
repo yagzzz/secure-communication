@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Upload, User, Save } from 'lucide-react';
+import { X, Upload, User, Save, Copy, Check, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,12 +9,47 @@ import { Textarea } from '@/components/ui/textarea';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
 export default function ProfileModal({ user, onClose, config }) {
   const [bio, setBio] = useState(user.bio || '');
   const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [addingFriend, setAddingFriend] = useState(false);
+  const [friendCode, setFriendCode] = useState('');
+
+  const handleCopyKurdCode = () => {
+    if (user.kurd_code) {
+      navigator.clipboard.writeText(user.kurd_code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success('KURD Kodu kopyalandı!');
+    }
+  };
+
+  const handleAddFriend = async () => {
+    if (!friendCode.trim()) {
+      toast.error('Lütfen KURD kodunu girin');
+      return;
+    }
+
+    setAddingFriend(true);
+    try {
+      const response = await axios.post(
+        `${API}/users/add-by-kurd/${friendCode.toUpperCase()}`,
+        {},
+        config
+      );
+      toast.success(`✅ ${response.data.user.username} arkadaş eklendi!`);
+      setFriendCode('');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Arkadaş eklenemedi');
+    } finally {
+      setAddingFriend(false);
+    }
+  };
 
   const handleUploadProfilePicture = async (e) => {
     const file = e.target.files[0];
@@ -116,6 +151,51 @@ export default function ProfileModal({ user, onClose, config }) {
               disabled
               className="bg-slate-800 border-slate-700 text-slate-400"
             />
+          </div>
+
+          {/* KURD CODE */}
+          <div className="space-y-2">
+            <Label className="text-slate-300 flex items-center gap-2">
+              <User className="w-4 h-4 text-[#22c55e]" />
+              KURD Kodu (Arkadaş Ekleme)
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                value={user.kurd_code || ''}
+                disabled
+                className="bg-slate-800 border-slate-700 text-[#22c55e] font-mono font-bold"
+              />
+              <Button
+                onClick={handleCopyKurdCode}
+                variant="outline"
+                className="border-slate-700 hover:bg-slate-800"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-slate-500">Bu kodu arkadaşlarınızla paylaşın</p>
+          </div>
+
+          {/* ADD FRIEND BY KURD */}
+          <div className="space-y-2 border-t border-slate-700 pt-4">
+            <Label className="text-slate-300 flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-[#22c55e]" />
+              Arkadaş Ekle
+            </Label>
+            <Input
+              placeholder="Arkadaşın KURD Kodunu girin..."
+              value={friendCode}
+              onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
+              className="bg-slate-800 border-slate-700 text-white font-mono"
+            />
+            <Button
+              onClick={handleAddFriend}
+              disabled={addingFriend || !friendCode.trim()}
+              className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a]"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              {addingFriend ? 'Ekleniyor...' : 'Arkadaş Ekle'}
+            </Button>
           </div>
 
           <div className="space-y-2">

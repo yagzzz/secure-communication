@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import Login from '@/pages/Login';
 import AdminDashboard from '@/pages/AdminDashboard';
 import ChatInterface from '@/pages/ChatInterface';
+import '@/utils/resizeObserverFix';
 import '@/App.css';
 
 function App() {

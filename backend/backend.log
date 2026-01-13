@@ -1,0 +1,26 @@
+Form data requires "python-multipart" to be installed. 
+You can install "python-multipart" with: 
+
+pip install python-multipart
+
+Traceback (most recent call last):
+  File "/home/yagobaba/secure-communication/backend/server.py", line 441, in <module>
+    @api_router.post("/users/profile-picture")
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/yagobaba/secure-communication/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 944, in decorator
+    self.add_api_route(
+  File "/home/yagobaba/secure-communication/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 883, in add_api_route
+    route = route_class(
+            ^^^^^^^^^^^^
+  File "/home/yagobaba/secure-communication/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 519, in __init__
+    self.body_field = get_body_field(dependant=self.dependant, name=self.unique_id)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/yagobaba/secure-communication/backend/venv/lib/python3.12/site-packages/fastapi/dependencies/utils.py", line 817, in get_body_field
+    check_file_field(final_field)
+  File "/home/yagobaba/secure-communication/backend/venv/lib/python3.12/site-packages/fastapi/dependencies/utils.py", line 100, in check_file_field
+    raise RuntimeError(multipart_not_installed_error) from None
+RuntimeError: Form data requires "python-multipart" to be installed. 
+You can install "python-multipart" with: 
+
+pip install python-multipart
+

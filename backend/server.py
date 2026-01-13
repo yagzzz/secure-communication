@@ -12,7 +12,8 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, VerificationError
 from jose import JWTError, jwt
 import socketio
 import base64
@@ -35,7 +36,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Security
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=14)
+pwd_hasher = PasswordHasher()
 SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_urlsafe(64))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
@@ -53,59 +54,12 @@ fernet = Fernet(FERNET_KEY)
 
 security = HTTPBearer()
 
-# Rate limiting storage
-rate_limit_storage: Dict[str, List[datetime]] = {}
-
-# ==================== SECURITY MIDDLEWARE ====================
-
-class SecurityMiddleware(BaseHTTPMiddleware):
-    """Advanced security middleware with rate limiting and request validation"""
-    
-    async def dispatch(self, request: Request, call_next):
-        # Get client IP
-        client_ip = request.client.host if request.client else "unknown"
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            client_ip = forwarded.split(",")[0].strip()
-        
-        # Rate limiting (100 requests per minute per IP)
-        now = datetime.now(timezone.utc)
-        minute_ago = now - timedelta(minutes=1)
-        
-        if client_ip not in rate_limit_storage:
-            rate_limit_storage[client_ip] = []
-        
-        # Clean old entries
-        rate_limit_storage[client_ip] = [
-            t for t in rate_limit_storage[client_ip] 
-            if t > minute_ago
-        ]
-        
-        # Check rate limit
-        if len(rate_limit_storage[client_ip]) >= 100:
-            return JSONResponse(
-                status_code=429,
-                content={"detail": "Too many requests. Please wait."}
-            )
-        
-        rate_limit_storage[client_ip].append(now)
-        
-        # Add security headers
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:;"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(self), microphone=(self), camera=(self)"
-        
-        return response
+# ==================== SECURITY HEADERS ====================
 
 from starlette.responses import JSONResponse
 
 # File storage paths
-UPLOAD_DIR = Path("/app/backend/uploads")
+UPLOAD_DIR = Path(__file__).parent / "uploads"
 PROFILE_PICS_DIR = UPLOAD_DIR / "profiles"
 FILES_DIR = UPLOAD_DIR / "files"
 STICKERS_DIR = UPLOAD_DIR / "stickers"
@@ -127,6 +81,38 @@ api_router = APIRouter(prefix="/api")
 
 active_connections: Dict[str, str] = {}
 
+# ==================== GLOBAL EXCEPTION HANDLER ====================
+
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    logger.error(f"HTTP Exception: {exc.status_code} - {exc.detail}")
+    return {
+        "status": "error",
+        "message": exc.detail,
+        "status_code": exc.status_code
+    }, exc.status_code
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.error(f"Validation Error: {exc.errors()}")
+    return {
+        "status": "error",
+        "message": "Invalid request data",
+        "details": exc.errors()
+    }, 422
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled Exception: {str(exc)}", exc_info=True)
+    return {
+        "status": "error",
+        "message": "Internal server error",
+        "error": str(exc) if os.environ.get('ENV') == 'development' else "An unexpected error occurred"
+    }, 500
+
 # ==================== MODELS ====================
 
 class UserCreate(BaseModel):
@@ -140,6 +126,7 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     username: str
     user_code: Optional[str] = None
+    kurd_code: Optional[str] = None  # Arkadaş ekleme için unique kod
     role: str = "user"
     profile_picture: Optional[str] = None
     bio: Optional[str] = None
@@ -234,17 +221,28 @@ def hash_file_content(content: bytes) -> str:
 
 # ==================== HELPERS ====================
 
+# ==================== HELPERS ====================
+
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        pwd_hasher.verify(hashed_password, plain_password)
+        return True
+    except (VerifyMismatchError, VerificationError):
+        return False
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return pwd_hasher.hash(password)
 
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def generate_kurd_code(username: str) -> str:
+    """Generate unique KURD code for friend adding: USERNAME-XXXXX"""
+    random_part = ''.join(secrets.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for _ in range(5))
+    return f"{username.upper()[:8]}-{random_part}"
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     credentials_exception = HTTPException(
@@ -309,7 +307,17 @@ async def register(user_data: UserCreate, current_user: User = Depends(get_curre
     while await db.users.find_one({"user_code": user_code}):
         user_code = generate_user_code()
     
-    user = User(username=sanitize_input(user_data.username), role=user_data.role, user_code=user_code)
+    # Generate KURD code
+    kurd_code = generate_kurd_code(user_data.username)
+    while await db.users.find_one({"kurd_code": kurd_code}):
+        kurd_code = generate_kurd_code(user_data.username)
+    
+    user = User(
+        username=sanitize_input(user_data.username),
+        role=user_data.role,
+        user_code=user_code,
+        kurd_code=kurd_code
+    )
     
     doc = user.model_dump()
     doc['hashed_password'] = get_password_hash(user_data.password)
@@ -327,6 +335,15 @@ async def login(login_data: LoginRequest):
     if not user_doc or not verify_password(login_data.password, user_doc['hashed_password']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # KURD code generate et (eğer yoksa)
+    if not user_doc.get('kurd_code'):
+        kurd_code = generate_kurd_code(user_doc['username'])
+        await db.users.update_one(
+            {"id": user_doc['id']},
+            {"$set": {"kurd_code": kurd_code}}
+        )
+        user_doc['kurd_code'] = kurd_code
+    
     await db.users.update_one(
         {"id": user_doc['id']},
         {"$set": {"last_seen": datetime.now(timezone.utc).isoformat(), "online": True}}
@@ -341,7 +358,32 @@ async def login(login_data: LoginRequest):
     access_token = create_access_token(data={"sub": user.id})
     
     return LoginResponse(access_token=access_token, token_type="bearer", user=user)
+# ==================== HEALTH CHECK ====================
 
+@api_router.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring and load balancers"""
+    try:
+        # Check MongoDB connection
+        await db.command("ping")
+        return {
+            "status": "healthy",
+            "service": "secure-communication-api",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "database": "connected",
+            "version": "1.0.0"
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return {
+            "status": "unhealthy",
+            "service": "secure-communication-api",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "database": "disconnected",
+            "error": str(e)
+        }, 503
+
+# ==================== AUTH ROUTES ====================
 @api_router.post("/auth/logout")
 async def logout(current_user: User = Depends(get_current_user)):
     await db.users.update_one({"id": current_user.id}, {"$set": {"online": False}})
@@ -394,6 +436,48 @@ async def update_bio(bio: str, current_user: User = Depends(get_current_user)):
     sanitized_bio = sanitize_input(bio)
     await db.users.update_one({"id": current_user.id}, {"$set": {"bio": sanitized_bio}})
     return {"bio": sanitized_bio}
+
+# ==================== KURD CODE (FRIEND ADDING) ====================
+
+@api_router.get("/users/kurd-code")
+async def get_kurd_code(current_user: User = Depends(get_current_user)):
+    """Get current user's KURD code for friend adding"""
+    return {"kurd_code": current_user.kurd_code}
+
+@api_router.post("/users/add-by-kurd/{kurd_code}")
+async def add_friend_by_kurd(kurd_code: str, current_user: User = Depends(get_current_user)):
+    """Add friend using KURD code (USERNAME-XXXXX)"""
+    # KURD code'dan user'ı bul
+    target_user = await db.users.find_one({"kurd_code": kurd_code.upper()}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="KURD code not found")
+    
+    if target_user['id'] == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot add yourself")
+    
+    # Conversation check (mutual friendship)
+    existing = await db.conversations.find_one({
+        "participants": {"$all": [current_user.id, target_user['id']]}
+    })
+    
+    if existing:
+        return {"status": "already_friends", "user": target_user}
+    
+    # Create conversation
+    conversation_id = str(uuid.uuid4())
+    await db.conversations.insert_one({
+        "id": conversation_id,
+        "participants": [current_user.id, target_user['id']],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_group": False,
+        "messages_count": 0
+    })
+    
+    return {
+        "status": "friend_added",
+        "user": target_user,
+        "conversation_id": conversation_id
+    }
 
 # ==================== CONVERSATION ROUTES ====================
 
@@ -976,9 +1060,7 @@ async def webrtc_ice_candidate(sid, data):
 
 app.include_router(api_router)
 
-# Add security middleware
-app.add_middleware(SecurityMiddleware)
-
+# Middleware stack
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -991,3 +1073,18 @@ app = socketio.ASGIApp(sio, app)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+if __name__ == "__main__":
+    import uvicorn
+    host = os.environ.get('HOST', '0.0.0.0')
+    port = int(os.environ.get('PORT', 8001))
+    workers = int(os.environ.get('WORKERS', 4))
+    
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        workers=workers,
+        log_level="info",
+        access_log=True
+    )

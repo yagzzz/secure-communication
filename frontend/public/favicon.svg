@@ -1,0 +1,25 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="256" height="256" fill="#020617"/>
+  
+  <!-- Cyberpunk Shield -->
+  <path d="M128 24L56 54V108C56 168 128 212 128 212C128 212 200 168 200 108V54L128 24Z" 
+        fill="#22c55e" opacity="0.1" stroke="#22c55e" stroke-width="2"/>
+  
+  <!-- Inner Lock -->
+  <circle cx="128" cy="115" r="25" fill="none" stroke="#22c55e" stroke-width="2"/>
+  <path d="M113 115H113C113 105.6 119.4 98 128 98C136.6 98 143 105.6 143 115" 
+        fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Center Dot -->
+  <circle cx="128" cy="128" r="5" fill="#22c55e"/>
+  
+  <!-- Glow effect -->
+  <circle cx="128" cy="128" r="30" fill="#22c55e" opacity="0.1"/>
+  
+  <!-- Tech lines -->
+  <line x1="100" y1="80" x2="110" y2="80" stroke="#22c55e" stroke-width="1.5" opacity="0.6"/>
+  <line x1="146" y1="80" x2="156" y2="80" stroke="#22c55e" stroke-width="1.5" opacity="0.6"/>
+  <line x1="100" y1="176" x2="110" y2="176" stroke="#22c55e" stroke-width="1.5" opacity="0.6"/>
+  <line x1="146" y1="176" x2="156" y2="176" stroke="#22c55e" stroke-width="1.5" opacity="0.6"/>
+</svg>
