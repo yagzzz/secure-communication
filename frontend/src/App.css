@@ -3,6 +3,8 @@
   background: #020617;
   color: #f8fafc;
   font-family: 'Inter', sans-serif;
+  --primary-color: #22c55e;
+  --secondary-color: #1e293b;
 }
 
 .heading-font {

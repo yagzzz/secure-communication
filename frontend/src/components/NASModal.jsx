@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Upload, HardDrive, Download, Trash2, Lock, Unlock } from 'lucide-react';
+import { X, Upload, HardDrive, Download, Trash2, Lock, Unlock, Copy, Check, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,11 +12,21 @@ import { toast } from 'sonner';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+};
+
 export default function NASModal({ onClose, user, config }) {
   const [files, setFiles] = useState([]);
+  const [uploaders, setUploaders] = useState({});
   const [uploading, setUploading] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [allowedUsers, setAllowedUsers] = useState('');
+  const [copiedLink, setCopiedLink] = useState({});
 
   useEffect(() => {
     fetchFiles();
@@ -26,6 +36,19 @@ export default function NASModal({ onClose, user, config }) {
     try {
       const response = await axios.get(`${API}/nas/files`, config);
       setFiles(response.data);
+      
+      const uploaderMap = {};
+      for (const file of response.data) {
+        if (!uploaderMap[file.uploaded_by]) {
+          try {
+            const userResponse = await axios.get(`${API}/users/${file.uploaded_by}`, config);
+            uploaderMap[file.uploaded_by] = userResponse.data.username;
+          } catch (e) {
+            uploaderMap[file.uploaded_by] = 'Bilinmiyor';
+          }
+        }
+      }
+      setUploaders(uploaderMap);
     } catch (error) {
       toast.error('Dosyalar yüklenemedi');
     }
@@ -36,20 +59,15 @@ export default function NASModal({ onClose, user, config }) {
     if (!file) return;
 
     setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('is_public', isPublic);
+    formData.append('allowed_users', allowedUsers);
+
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('is_public', isPublic);
-      formData.append('allowed_users', allowedUsers);
-
       await axios.post(`${API}/nas/upload`, formData, {
-        ...config,
-        headers: {
-          ...config.headers,
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
       });
-
       toast.success('✅ Dosya yüklendi');
       fetchFiles();
       setAllowedUsers('');
@@ -59,6 +77,14 @@ export default function NASModal({ onClose, user, config }) {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleCopyDownloadLink = (filepath) => {
+    const fullUrl = BACKEND_URL + filepath;
+    navigator.clipboard.writeText(fullUrl);
+    setCopiedLink({ ...copiedLink, [filepath]: true });
+    toast.success('📋 Link kopyalandı');
+    setTimeout(() => setCopiedLink({ ...copiedLink, [filepath]: false }), 2000);
   };
 
   const handleDelete = async (fileId) => {
@@ -71,12 +97,6 @@ export default function NASModal({ onClose, user, config }) {
     } catch (error) {
       toast.error('Silme başarısız');
     }
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
-    return (bytes / 1048576).toFixed(2) + ' MB';
   };
 
   return (
@@ -153,66 +173,89 @@ export default function NASModal({ onClose, user, config }) {
         <div className="flex-1 overflow-hidden">
           <h3 className="text-sm font-semibold text-slate-400 mb-3">Dosyalar ({files.length})</h3>
           <ScrollArea className="h-[400px]">
-            <div className="space-y-2">
+            <div className="space-y-3 pr-4">
               {files.map((file) => (
                 <motion.div
                   key={file.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors"
+                  className="p-4 bg-gradient-to-r from-slate-800/50 to-slate-800/30 rounded-lg border border-slate-700"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-100 truncate">{file.filename}</p>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs text-slate-400 mono-font">
-                          {formatFileSize(file.size)}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {file.is_public ? (
-                            <span className="flex items-center gap-1 text-green-400">
-                              <Unlock className="w-3 h-3" /> Herkese Açık
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-yellow-400">
-                              <Lock className="w-3 h-3" /> Özel
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {new Date(file.uploaded_at).toLocaleDateString('tr-TR')}
+                      <p className="font-bold text-slate-100 truncate text-lg">{file.filename}</p>
+                      
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <div className="flex items-center gap-2">
+                          <User className="w-3 h-3 text-slate-400" />
+                          <span className="text-xs text-slate-400">
+                            <span className="text-[#22c55e] font-semibold">{uploaders[file.uploaded_by]}</span> tarafından yüklendi
+                          </span>
+                        </div>
+                        <span className="text-xs text-right text-slate-400">
+                          📥 {file.download_count || 0} download
                         </span>
                       </div>
+
+                      <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                        <span>{new Date(file.uploaded_at).toLocaleDateString('tr-TR')}</span>
+                        <span>{formatFileSize(file.size)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={BACKEND_URL + file.filepath}
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+
+                    <div className="flex flex-col gap-2 items-end">
+                      <div>
+                        {file.is_public ? (
+                          <span className="px-2 py-1 bg-green-900/30 text-green-400 text-xs rounded flex items-center gap-1">
+                            <Unlock className="w-3 h-3" /> Açık
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 bg-yellow-900/30 text-yellow-400 text-xs rounded flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> Özel
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-1">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-[#22c55e] hover:text-[#16a34a]"
+                          onClick={() => handleCopyDownloadLink(file.filepath)}
+                          className="h-8 w-8 p-0 text-slate-400 hover:text-[#22c55e]"
                         >
-                          <Download className="w-4 h-4" />
+                          {copiedLink[file.filepath] ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
                         </Button>
-                      </a>
-                      {user.role === 'admin' && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDelete(file.id)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+
+                        <a href={BACKEND_URL + file.filepath} download target="_blank" rel="noopener noreferrer">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-[#22c55e]"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </a>
+
+                        {(user.role === 'admin' || user.id === file.uploaded_by) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(file.id)}
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
+              
               {files.length === 0 && (
                 <div className="text-center py-12">
                   <HardDrive className="w-16 h-16 text-slate-700 mx-auto mb-3" />

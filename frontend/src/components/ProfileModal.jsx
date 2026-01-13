@@ -12,8 +12,16 @@ import { toast } from 'sonner';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
+const SOUTH_PARK_CHARS = {
+  cartman: { name: 'Cartman', emoji: '🤡' },
+  kyle: { name: 'Kyle', emoji: '🟢' },
+  stan: { name: 'Stan', emoji: '👨' },
+  kenny: { name: 'Kenny', emoji: '🟡' }
+};
+
 export default function ProfileModal({ user, onClose, config }) {
   const [bio, setBio] = useState(user.bio || '');
+  const [character, setCharacter] = useState(user.profile_character || 'cartman');
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [addingFriend, setAddingFriend] = useState(false);
@@ -83,6 +91,20 @@ export default function ProfileModal({ user, onClose, config }) {
       toast.success('✅ Biyografi güncellendi');
     } catch (error) {
       toast.error('Güncelleme başarısız');
+    }
+  };
+
+  const handleChangeCharacter = async (newCharacter) => {
+    try {
+      await axios.patch(
+        `${API}/users/character?character=${newCharacter}`,
+        {},
+        config
+      );
+      setCharacter(newCharacter);
+      toast.success(`✅ Karakter ${SOUTH_PARK_CHARS[newCharacter].name} olarak değiştirildi!`);
+    } catch (error) {
+      toast.error('Karakter değiştirilemedi');
     }
   };
 
@@ -198,7 +220,29 @@ export default function ProfileModal({ user, onClose, config }) {
             </Button>
           </div>
 
-          <div className="space-y-2">
+          {/* SOUTH PARK CHARACTER SELECTION */}
+          <div className="space-y-2 border-t border-slate-700 pt-4">
+            <Label className="text-slate-300 font-bold">Profil Karakteri (South Park)</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {Object.entries(SOUTH_PARK_CHARS).map(([key, value]) => (
+                <button
+                  key={key}
+                  onClick={() => handleChangeCharacter(key)}
+                  className={`p-3 rounded-lg font-bold transition-all ${
+                    character === key
+                      ? 'bg-[#22c55e] text-black border-2 border-[#16a34a]'
+                      : 'bg-slate-800 text-slate-300 border-2 border-slate-700 hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="text-2xl">{value.emoji}</div>
+                  <div className="text-xs mt-1">{value.name}</div>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500">Netflix'deki gibi karakter seç!</p>
+          </div>
+
+          <div className="space-y-2 border-t border-slate-700 pt-4">
             <Label className="text-slate-300">Biyografi</Label>
             <Textarea
               value={bio}

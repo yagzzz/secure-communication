@@ -26,6 +26,7 @@ import secrets
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from encryption import encrypt_string, decrypt_string, encrypt_dict, decrypt_dict
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -130,6 +131,7 @@ class User(BaseModel):
     role: str = "user"
     profile_picture: Optional[str] = None
     bio: Optional[str] = None
+    profile_character: Optional[str] = "cartman"  # South Park karakter: cartman, kyle, stan, kenny
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_seen: Optional[datetime] = None
     online: bool = False
@@ -417,6 +419,8 @@ async def get_users(current_user: User = Depends(get_current_user)):
             user['created_at'] = datetime.fromisoformat(user['created_at'])
         if user.get('last_seen') and isinstance(user['last_seen'], str):
             user['last_seen'] = datetime.fromisoformat(user['last_seen'])
+        # Decrypt user profile data
+        user = decrypt_dict(user)
     return users
 
 @api_router.get("/users/{user_id}", response_model=User)
@@ -431,6 +435,8 @@ async def get_user_profile(user_id: str, current_user: User = Depends(get_curren
     if user.get('last_seen') and isinstance(user['last_seen'], str):
         user['last_seen'] = datetime.fromisoformat(user['last_seen'])
     
+    # Decrypt user profile data
+    user = decrypt_dict(user)
     return User(**user)
 
 @api_router.delete("/users/{user_id}")
@@ -455,15 +461,29 @@ async def upload_profile_picture(file: UploadFile = File(...), current_user: Use
         await out_file.write(content)
     
     profile_url = f"/api/files/profiles/{filename}"
-    await db.users.update_one({"id": current_user.id}, {"$set": {"profile_picture": profile_url}})
+    
+    # Encrypt profile URL before storing
+    encrypted_url = encrypt_string(profile_url)
+    await db.users.update_one({"id": current_user.id}, {"$set": {"profile_picture": encrypted_url}})
     
     return {"profile_picture": profile_url}
 
 @api_router.patch("/users/bio")
 async def update_bio(bio: str, current_user: User = Depends(get_current_user)):
     sanitized_bio = sanitize_input(bio)
-    await db.users.update_one({"id": current_user.id}, {"$set": {"bio": sanitized_bio}})
+    # Encrypt bio before storing
+    encrypted_bio = encrypt_string(sanitized_bio)
+    await db.users.update_one({"id": current_user.id}, {"$set": {"bio": encrypted_bio}})
     return {"bio": sanitized_bio}
+@api_router.patch("/users/character")
+async def update_profile_character(character: str, current_user: User = Depends(get_current_user)):
+    """Update user's South Park profile character"""
+    valid_characters = ["cartman", "kyle", "stan", "kenny"]
+    if character.lower() not in valid_characters:
+        raise HTTPException(status_code=400, detail=f"Invalid character. Choose from: {', '.join(valid_characters)}")
+    
+    await db.users.update_one({"id": current_user.id}, {"$set": {"profile_character": character.lower()}})
+    return {"profile_character": character.lower()}
 
 # ==================== KURD CODE (FRIEND ADDING) ====================
 
@@ -522,7 +542,9 @@ async def get_admin_settings(current_user: User = Depends(get_current_user)):
         return AdminSettings()
     
     del settings['_id']
-    return AdminSettings(**settings)
+    # Decrypt settings before returning
+    decrypted_settings = decrypt_dict(settings)
+    return AdminSettings(**decrypted_settings)
 
 @api_router.put("/admin/settings")
 async def update_admin_settings(settings: AdminSettings, current_user: User = Depends(get_current_user)):
@@ -534,9 +556,12 @@ async def update_admin_settings(settings: AdminSettings, current_user: User = De
     settings_dict["type"] = "global"
     settings_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     
+    # Encrypt sensitive settings before storing
+    encrypted_settings = encrypt_dict(settings_dict)
+    
     await db.admin_settings.update_one(
         {"type": "global"},
-        {"$set": settings_dict},
+        {"$set": encrypted_settings},
         upsert=True
     )
     
@@ -812,8 +837,7 @@ async def upload_nas_file(
     is_public: bool = Form(False),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can upload to NAS")
+    """Upload file to NAS - any user can upload"""
     
     filename = f"{uuid.uuid4()}_{file.filename}"
     filepath = NAS_DIR / filename
@@ -836,38 +860,46 @@ async def upload_nas_file(
     
     doc = nas_file.model_dump()
     doc['uploaded_at'] = doc['uploaded_at'].isoformat()
+    doc['uploaded_by_username'] = current_user.username  # Add uploader username
+    doc['download_count'] = 0  # Track downloads
     
-    await db.nas_files.insert_one(doc)
+    # Encrypt sensitive file metadata
+    encrypted_doc = encrypt_dict(doc)
+    
+    await db.nas_files.insert_one(encrypted_doc)
     return nas_file
 
 @api_router.get("/nas/files")
 async def get_nas_files(current_user: User = Depends(get_current_user)):
-    if current_user.role == "admin":
-        files = await db.nas_files.find({}, {"_id": 0}).to_list(1000)
-    else:
-        files = await db.nas_files.find(
-            {"$or": [
-                {"is_public": True},
-                {"allowed_users": current_user.id},
-                {"uploaded_by": current_user.id}
-            ]},
-            {"_id": 0}
-        ).to_list(1000)
+    """Get accessible NAS files - everyone can see public files"""
+    files = await db.nas_files.find(
+        {"$or": [
+            {"is_public": True},
+            {"allowed_users": current_user.id},
+            {"uploaded_by": current_user.id}
+        ]},
+        {"_id": 0}
+    ).to_list(1000)
     
+    decrypted_files = []
     for f in files:
         if isinstance(f.get('uploaded_at'), str):
             f['uploaded_at'] = datetime.fromisoformat(f['uploaded_at'])
+        # Decrypt file metadata
+        decrypted_file = decrypt_dict(f)
+        decrypted_files.append(decrypted_file)
     
-    return files
+    return decrypted_files
 
 @api_router.delete("/nas/files/{file_id}")
 async def delete_nas_file(file_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can delete NAS files")
-    
     file_doc = await db.nas_files.find_one({"id": file_id}, {"_id": 0})
     if not file_doc:
         raise HTTPException(status_code=404, detail="File not found")
+    
+    # Only uploader or admin can delete
+    if file_doc['uploaded_by'] != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to delete this file")
     
     filepath = NAS_DIR / file_doc['filepath'].split('/')[-1]
     if filepath.exists():
@@ -914,6 +946,12 @@ async def get_nas_file(filename: str, current_user: User = Depends(get_current_u
     filepath = NAS_DIR / filename
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="File not found")
+    
+    # Increment download count
+    await db.nas_files.update_one(
+        {"filepath": f"/api/files/nas/{filename}"},
+        {"$inc": {"download_count": 1}}
+    )
     
     return FileResponse(filepath)
 
