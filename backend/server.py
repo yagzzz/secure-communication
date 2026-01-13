@@ -419,6 +419,20 @@ async def get_users(current_user: User = Depends(get_current_user)):
             user['last_seen'] = datetime.fromisoformat(user['last_seen'])
     return users
 
+@api_router.get("/users/{user_id}", response_model=User)
+async def get_user_profile(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get specific user profile by ID"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0, "security_passphrase_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if isinstance(user.get('created_at'), str):
+        user['created_at'] = datetime.fromisoformat(user['created_at'])
+    if user.get('last_seen') and isinstance(user['last_seen'], str):
+        user['last_seen'] = datetime.fromisoformat(user['last_seen'])
+    
+    return User(**user)
+
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":

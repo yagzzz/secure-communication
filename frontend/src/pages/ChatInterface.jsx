@@ -174,6 +174,16 @@ export default function ChatInterface({ user, onLogout }) {
     }
   };
 
+  const getOtherUserProfile = async (userId) => {
+    try {
+      const response = await axios.get(`${API}/users/${userId}`, config);
+      return response.data;
+    } catch (error) {
+      console.error('Profil yüklenemedi:', error);
+      return null;
+    }
+  };
+
   const fetchConversations = async () => {
     try {
       const response = await axios.get(`${API}/conversations`, config);
@@ -453,7 +463,17 @@ export default function ChatInterface({ user, onLogout }) {
           {!isSent && (
             <Avatar 
               className="w-8 h-8 border border-slate-700 cursor-pointer"
-              onClick={() => setViewingProfile(users.find(u => u.username === message.sender_username))}
+              onClick={async () => {
+                const otherUser = users.find(u => u.username === message.sender_username);
+                if (otherUser) {
+                  setViewingProfile(otherUser);
+                } else if (message.sender_id) {
+                  const profile = await getOtherUserProfile(message.sender_id);
+                  if (profile) {
+                    setViewingProfile(profile);
+                  }
+                }
+              }}
             >
               <AvatarImage src={getUserAvatar(message.sender_username) ? BACKEND_URL + getUserAvatar(message.sender_username) : null} />
               <AvatarFallback className="bg-slate-800 text-xs">
@@ -908,7 +928,18 @@ export default function ChatInterface({ user, onLogout }) {
         {selectedConversation ? (
           <>
             <div className="bg-slate-900 p-3 flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="flex items-center gap-2">
+              <div 
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={async () => {
+                  if (!selectedConversation.is_group) {
+                    const otherUserId = selectedConversation.participants.find(p => p !== user.id);
+                    if (otherUserId) {
+                      const profile = await getOtherUserProfile(otherUserId);
+                      if (profile) setViewingProfile(profile);
+                    }
+                  }
+                }}
+              >
                 <Lock style={{color: '#22c55e'}} className="w-5 h-5" />
                 <div>
                   <h3 className="font-semibold text-white text-sm">{getOtherParticipants(selectedConversation)}</h3>
