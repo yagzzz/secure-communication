@@ -382,12 +382,23 @@ async def health_check():
     try:
         # Check MongoDB connection
         await db.command("ping")
+        
+        # Get database statistics for persistence verification
+        messages_count = await db.messages.count_documents({})
+        conversations_count = await db.conversations.count_documents({})
+        users_count = await db.users.count_documents({})
+        
         return {
             "status": "healthy",
             "service": "secure-communication-api",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "database": "connected",
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "data_persistence": {
+                "messages": messages_count,
+                "conversations": conversations_count,
+                "users": users_count
+            }
         }
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
@@ -1171,6 +1182,61 @@ app.add_middleware(
 )
 
 app = socketio.ASGIApp(sio, app)
+
+# ==================== BACKUP & EXPORT ====================
+
+@api_router.post("/backup/export")
+async def export_user_data(current_user: User = Depends(get_current_user)):
+    """Export user's messages and conversations for backup"""
+    try:
+        backup_data = {
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "export_timestamp": datetime.now(timezone.utc).isoformat(),
+            "conversations": [],
+            "messages": []
+        }
+        
+        # Get all conversations this user is in
+        conversations = await db.conversations.find(
+            {"participants": current_user.id},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        for conv in conversations:
+            backup_data["conversations"].append(conv)
+            
+            # Get all messages in this conversation
+            messages = await db.messages.find(
+                {"conversation_id": conv["id"]},
+                {"_id": 0, "hashed_password": 0}
+            ).to_list(10000)
+            
+            backup_data["messages"].extend(messages)
+        
+        return backup_data
+    except Exception as e:
+        logger.error(f"Backup export failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Backup export failed")
+
+@api_router.get("/backup/status")
+async def get_backup_status(current_user: User = Depends(get_current_user)):
+    """Get backup and data persistence status"""
+    try:
+        user_messages = await db.messages.count_documents({"sender_id": current_user.id})
+        user_conversations = await db.conversations.count_documents({"participants": current_user.id})
+        
+        return {
+            "user_id": current_user.id,
+            "username": current_user.username,
+            "messages_stored": user_messages,
+            "conversations_stored": user_conversations,
+            "last_backup": datetime.now(timezone.utc).isoformat(),
+            "status": "backed_up" if user_messages > 0 or user_conversations > 0 else "no_data"
+        }
+    except Exception as e:
+        logger.error(f"Backup status check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Status check failed")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

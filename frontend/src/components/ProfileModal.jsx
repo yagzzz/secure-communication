@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ProfilePictureSelector from '@/components/ProfilePictureSelector';
 import axios from 'axios';
 import { toast } from 'sonner';
 
@@ -120,10 +122,10 @@ export default function ProfileModal({ user, onClose, config }) {
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md"
+        className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-100 heading-font">Profil</h2>
+          <h2 className="text-2xl font-bold text-slate-100 heading-font">Profil Ayarları</h2>
           <Button
             variant="ghost"
             size="sm"
@@ -134,131 +136,142 @@ export default function ProfileModal({ user, onClose, config }) {
           </Button>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex flex-col items-center">
-            <div className="relative group">
+        <Tabs defaultValue="info" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-800/50">
+            <TabsTrigger value="info">Bilgiler</TabsTrigger>
+            <TabsTrigger value="character">Karakter</TabsTrigger>
+            <TabsTrigger value="picture">Resim</TabsTrigger>
+            <TabsTrigger value="friends">Arkadaşlar</TabsTrigger>
+          </TabsList>
+
+          {/* Info Tab */}
+          <TabsContent value="info" className="space-y-4 mt-6">
+            <div className="flex flex-col items-center mb-6">
               <Avatar className="w-32 h-32 border-4 border-[#22c55e]">
                 <AvatarImage src={user.profile_picture ? BACKEND_URL + user.profile_picture : null} />
                 <AvatarFallback className="bg-slate-800 text-4xl">
                   {user.username[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <label className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                <Upload className="w-6 h-6 text-white" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUploadProfilePicture}
-                  className="hidden"
-                  disabled={uploading}
-                />
-              </label>
             </div>
-            {uploading && <p className="text-sm text-slate-400 mt-2">Yükleniyor...</p>}
-          </div>
 
-          <div className="space-y-2">
-            <Label className="text-slate-300">Kullanıcı Adı</Label>
-            <Input
-              value={user.username}
-              disabled
-              className="bg-slate-800 border-slate-700 text-slate-400"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-slate-300">Rol</Label>
-            <Input
-              value={user.role === 'admin' ? '👑 Admin' : '👤 Kullanıcı'}
-              disabled
-              className="bg-slate-800 border-slate-700 text-slate-400"
-            />
-          </div>
-
-          {/* KURD CODE */}
-          <div className="space-y-2">
-            <Label className="text-slate-300 flex items-center gap-2">
-              <User className="w-4 h-4 text-[#22c55e]" />
-              KURD Kodu (Arkadaş Ekleme)
-            </Label>
-            <div className="flex gap-2">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Kullanıcı Adı</Label>
               <Input
-                value={user.kurd_code || ''}
+                value={user.username}
                 disabled
-                className="bg-slate-800 border-slate-700 text-[#22c55e] font-mono font-bold"
+                className="bg-slate-800 border-slate-700 text-slate-400"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Rol</Label>
+              <Input
+                value={user.role === 'admin' ? '👑 Admin' : '👤 Kullanıcı'}
+                disabled
+                className="bg-slate-800 border-slate-700 text-slate-400"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Biyografi</Label>
+              <Textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Kendiniz hakkında birkaç şey yazın..."
+                className="bg-slate-800 border-slate-700 resize-none h-24"
               />
               <Button
-                onClick={handleCopyKurdCode}
-                variant="outline"
-                className="border-slate-700 hover:bg-slate-800"
+                onClick={handleUpdateBio}
+                className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a]"
               >
-                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                <Save className="w-4 h-4 mr-2" />
+                Kaydet
               </Button>
             </div>
-            <p className="text-xs text-slate-500">Bu kodu arkadaşlarınızla paylaşın</p>
-          </div>
+          </TabsContent>
 
-          {/* ADD FRIEND BY KURD */}
-          <div className="space-y-2 border-t border-slate-700 pt-4">
-            <Label className="text-slate-300 flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-[#22c55e]" />
-              Arkadaş Ekle
-            </Label>
-            <Input
-              placeholder="Arkadaşın KURD Kodunu girin..."
-              value={friendCode}
-              onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
-              className="bg-slate-800 border-slate-700 text-white font-mono"
-            />
-            <Button
-              onClick={handleAddFriend}
-              disabled={addingFriend || !friendCode.trim()}
-              className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a]"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              {addingFriend ? 'Ekleniyor...' : 'Arkadaş Ekle'}
-            </Button>
-          </div>
-
-          {/* SOUTH PARK CHARACTER SELECTION */}
-          <div className="space-y-2 border-t border-slate-700 pt-4">
-            <Label className="text-slate-300 font-bold">Profil Karakteri (South Park)</Label>
-            <div className="grid grid-cols-4 gap-2">
+          {/* Character Tab */}
+          <TabsContent value="character" className="space-y-4 mt-6">
+            <p className="text-sm text-slate-400">Profil karakterinizi seçin</p>
+            <div className="grid grid-cols-4 gap-3">
               {Object.entries(SOUTH_PARK_CHARS).map(([key, value]) => (
-                <button
+                <motion.button
                   key={key}
                   onClick={() => handleChangeCharacter(key)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className={`p-3 rounded-lg font-bold transition-all ${
                     character === key
-                      ? 'bg-[#22c55e] text-black border-2 border-[#16a34a]'
+                      ? 'bg-[#22c55e] text-black border-2 border-[#16a34a] ring-2 ring-[#22c55e]'
                       : 'bg-slate-800 text-slate-300 border-2 border-slate-700 hover:bg-slate-700'
                   }`}
                 >
-                  <div className="text-2xl">{value.emoji}</div>
+                  <div className="text-3xl">{value.emoji}</div>
                   <div className="text-xs mt-1">{value.name}</div>
-                </button>
+                </motion.button>
               ))}
             </div>
-            <p className="text-xs text-slate-500">Netflix'deki gibi karakter seç!</p>
-          </div>
+            <p className="text-xs text-slate-500 mt-4">💡 Netflix'deki gibi karakter seç!</p>
+          </TabsContent>
 
-          <div className="space-y-2 border-t border-slate-700 pt-4">
-            <Label className="text-slate-300">Biyografi</Label>
-            <Textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Kendiniz hakkında birkaç şey yazın..."
-              className="bg-slate-800 border-slate-700 resize-none h-24"
+          {/* Picture Tab */}
+          <TabsContent value="picture" className="space-y-4 mt-6">
+            <ProfilePictureSelector 
+              currentCharacter={character}
+              onSelectCharacter={handleChangeCharacter}
+              config={config}
             />
-            <Button
-              onClick={handleUpdateBio}
-              className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a]"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Kaydet
-            </Button>
-          </div>
-        </div>
+          </TabsContent>
+
+          {/* Friends Tab */}
+          <TabsContent value="friends" className="space-y-4 mt-6">
+            {/* KURD CODE */}
+            <div className="space-y-2">
+              <Label className="text-slate-300 flex items-center gap-2">
+                <User className="w-4 h-4 text-[#22c55e]" />
+                KURD Kodu (Arkadaş Ekleme)
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  value={user.kurd_code || ''}
+                  disabled
+                  className="bg-slate-800 border-slate-700 text-[#22c55e] font-mono font-bold"
+                />
+                <Button
+                  onClick={handleCopyKurdCode}
+                  variant="outline"
+                  className="border-slate-700 hover:bg-slate-800"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500">Bu kodu arkadaşlarınızla paylaşın</p>
+            </div>
+
+            {/* ADD FRIEND BY KURD */}
+            <div className="space-y-2 border-t border-slate-700 pt-4">
+              <Label className="text-slate-300 flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-[#22c55e]" />
+                Arkadaş Ekle
+              </Label>
+              <Input
+                placeholder="Arkadaşın KURD Kodunu girin..."
+                value={friendCode}
+                onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
+                className="bg-slate-800 border-slate-700 text-white font-mono"
+              />
+              <Button
+                onClick={handleAddFriend}
+                disabled={addingFriend || !friendCode.trim()}
+                className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a]"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                {addingFriend ? 'Ekleniyor...' : 'Arkadaş Ekle'}
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </motion.div>
     </motion.div>
   );

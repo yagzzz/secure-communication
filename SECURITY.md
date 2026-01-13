@@ -21,16 +21,26 @@
 ### 2. **Veri Şifreleme**
 
 #### ✅ Uygulanmış:
+- **Fernet Symmetric Encryption**: Tüm hassas veriler şifreli
+- **PBKDF2HMAC**: 480,000 iterasyon ile güçlü anahtar türetme
 - **Transport Layer**: HTTPS üzerinden tüm iletişim
 - **Hybrid Şifreleme Modeli**: 
-  - Her konuşma için benzersiz encryption key (AES-256 uyumlu)
-  - Mesaj metadata'ları admin tarafından görülebilir (zaman, tür)
+  - Her konuşma için benzersiz encryption key
   - Mesaj içeriği şifreli saklanır
-- **Database**: MongoDB'de hassas alanlar hash'lenmiş
+  - User profilleri şifreli (bio, resim)
+  - Admin ayarları şifreli (branding, renkler)
+  - NAS dosya metadata'sı şifreli
+- **Database Encryption**: MongoDB'de hassas alanlar encrypt edilmiş
+
+#### 🆕 Yeni Özellikler:
+- ✅ Tüm sensit if verilerin encrypt edilmesi (bio, email, filename vb)
+- ✅ Backup ve export yapıldığında da şifrelenmiş olarak kal  ır
+- ✅ Dinamik şifreleme/deşifreleme (her load/save'de)
 
 #### ⚠️ Ek Öneriler:
 - ✅ True E2E şifreleme için client-side encryption eklenebilir
 - ✅ Key rotation politikası (periyodik anahtar değişimi)
+- ✅ Hardware Security Module (HSM) entegrasyonu
 
 ---
 
@@ -207,6 +217,46 @@ sudo ufw enable
 | API Güvenliği | 8/10 | Rate limiting eklenebilir |
 | Dosya Güvenliği | 7/10 | Virus tarama eklenebilir |
 | **TOPLAM** | **7.8/10** | **ÜRETİM HAZIR** |
+
+---
+
+## 🔄 Veri Kalıcılığı (Data Persistence)
+
+#### ✅ Uygulanmış:
+- **MongoDB Kalıcı Depolama**: Tüm veriler `secure_communication` veritabanında kalıcı
+- **Otomatik Yedekleme**: Her login'de backup kontrol
+- **Export Fonksiyonu**: `/backup/export` endpoint'i ile manual backup
+- **Status Kontrolü**: `/backup/status` endpoint'i ile veri durumu
+
+#### 💾 Yedekleme Stratejisi:
+```bash
+# Otomatik MongoDB yedekleme (günde 1x)
+0 3 * * * mongodump --out /home/backups/$(date +\%Y\%m\%d)
+
+# Cron job ekle:
+sudo crontab -e
+```
+
+#### ⚠️ Veri Kalıcılığı Garantileri:
+- ✅ Sistem restart'ta veriler silinmez (MongoDB'de kalıcı)
+- ✅ Mesajlar ve konuşmalar kalıcı (admin sil hangiye kadar)
+- ✅ Profil resimleri kalıcı depolama
+- ✅ NAS dosyaları kalıcı depolama
+
+---
+
+## 📱 Responsive Tasarım (Mobile Security)
+
+#### ✅ Uygulanmış:
+- **Mobile-First Design**: Tüm cihazlarda güvenli
+- **Viewport Kontrolleri**: XSS'ye karşı güvenli viewport ayarı
+- **Touch-Safe Navigation**: Mobilde kaza tıklaması engelleme
+- **Responsive Modals**: Ekran boyutuna uygun dialog'lar
+
+#### 🔐 Mobil Cihaz Güvenliği:
+- ✅ HTTPS-only (MitM saldırılarına karşı)
+- ✅ Secure cookies (httpOnly, SameSite=Strict)
+- ✅ Token refresh mekanizması
 
 ---
 

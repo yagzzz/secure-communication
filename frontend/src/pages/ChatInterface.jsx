@@ -603,6 +603,106 @@ export default function ChatInterface({ user, onLogout }) {
     <div className="h-[100dvh] bg-[#020617] flex flex-col lg:flex-row overflow-hidden">
       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
 
+      {/* Mobile Header - Only visible on small screens */}
+      <div className="lg:hidden bg-slate-950/50 border-b border-slate-800/50 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        <Sheet open={showSidebarSheet} onOpenChange={setShowSidebarSheet}>
+          <SheetTrigger asChild>
+            <Button size="sm" variant="ghost" className="text-slate-400">
+              <Menu className="w-5 h-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="bg-slate-950/50 border-slate-800/50 w-80 p-0">
+            <div className="p-4 border-b border-slate-800/50 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-100">EncrypTalk</h2>
+                <SheetClose asChild>
+                  <Button size="sm" variant="ghost" className="text-slate-400">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </SheetClose>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Avatar className="w-10 h-10 border-2 border-[#22c55e] cursor-pointer" onClick={() => { setShowProfile(true); setShowSidebarSheet(false); }}>
+                  <AvatarImage src={user.profile_picture ? BACKEND_URL + user.profile_picture : null} />
+                  <AvatarFallback className="bg-slate-800">{user.username[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">{user.username}</h3>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+                    <span className="text-xs text-slate-400">Çevrimiçi</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 space-y-3 overflow-y-auto h-[calc(100dvh-200px)]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-500" />
+                <Input
+                  placeholder="Konuşma ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-slate-900/50 border-slate-800 text-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                {conversations.length === 0 ? (
+                  <p className="text-slate-400 text-center py-8 text-sm">Henüz konuşma yok</p>
+                ) : (
+                  conversations.map(conv => (
+                    <div
+                      key={conv.id}
+                      onClick={() => {
+                        setSelectedConversation(conv);
+                        setShowSidebarSheet(false);
+                      }}
+                      className={`p-3 rounded cursor-pointer transition-colors text-sm ${
+                        selectedConversation?.id === conv.id
+                          ? 'bg-[#22c55e]/20 border border-[#22c55e]'
+                          : 'bg-slate-800/50 hover:bg-slate-800'
+                      }`}
+                    >
+                      <p className="font-medium text-slate-100 truncate">{conv.participant_usernames[0] || 'Konuşma'}</p>
+                      <p className="text-xs text-slate-400 line-clamp-1">Son mesaj...</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800/50 space-y-2">
+              <Button className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a] text-sm" size="sm">
+                <Plus className="w-3 h-3 mr-2" />Yeni Chat
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full border-red-600/50 text-red-400 hover:bg-red-600/10 text-sm" 
+                size="sm"
+                onClick={() => { handleLogout(); setShowSidebarSheet(false); }}
+              >
+                <LogOut className="w-3 h-3 mr-2" />Çıkış
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <h1 className="text-lg font-bold text-slate-100 flex-1 text-center">EncrypTalk</h1>
+
+        <div className="flex items-center gap-1">
+          {user.role === 'admin' && (
+            <Button size="sm" variant="ghost" onClick={() => setShowNAS(true)} className="text-slate-400 hover:text-[#22c55e]">
+              <HardDrive className="w-4 h-4" />
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={() => setShowProfile(true)} className="text-slate-400 hover:text-[#22c55e]">
+            <User className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
       {/* Desktop Sidebar - Always visible on lg and above */}
       <div className="hidden lg:flex w-80 bg-slate-950/50 border-r border-slate-800/50 flex-col">
         <div className="p-4 border-b border-slate-800/50">

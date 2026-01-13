@@ -5,11 +5,22 @@ Bu rehber, EncrypTalk'ı Ubuntu 22.04+ sunucusuna nasıl kuracağınızı adım 
 ## 📋 Sistem Gereksinimleri
 
 - Ubuntu 22.04 LTS veya üzeri
-- Minimum 2GB RAM
-- Minimum 20GB disk alanı
-- Python 3.11+
+- Minimum 2GB RAM (4GB önerilir)
+- Minimum 20GB disk alanı (Veritabanı ve yedekleme için)
+- Python 3.12+
 - Node.js 18+
 - MongoDB 6.0+
+- (Opsiyonal) Docker & Docker Compose
+
+## ✨ Özellikler
+
+- ✅ **End-to-End Encryption** - Tüm veriler Fernet şifreli
+- ✅ **Data Persistence** - Veriler MongoDB'de kalıcı (restart'ta silinmez)
+- ✅ **Backup Sistemi** - Otomatik yedekleme ve export
+- ✅ **South Park Karakterleri** - Profil özelleştirmesi
+- ✅ **NAS Dosya Sistemi** - Şifreli dosya depolaması
+- ✅ **Responsive Design** - Mobil, tablet, desktop uyumlu
+- ✅ **Admin Panel** - Branding ve sistem ayarları
 
 ## 🔧 Kurulum Adımları
 
