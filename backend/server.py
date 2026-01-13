@@ -189,6 +189,21 @@ class Sticker(BaseModel):
     created_by: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class AdminSettings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    app_title: str = "EncrypTalk"
+    app_description: str = "End-to-End Şifreli Güvenli Mesajlaşma"
+    primary_color: str = "#22c55e"
+    secondary_color: str = "#020617"
+    max_upload_size: int = 50
+    enable_notifications: bool = True
+    enable_call_logs: bool = True
+    enable_message_search: bool = True
+    enable_encryption: bool = True
+    enable_read_receipts: bool = True
+    retention_days: int = 30
+    max_group_members: int = 100
+
 # ==================== ENCRYPTION HELPERS ====================
 
 def encrypt_message(content: str) -> str:
@@ -455,22 +470,23 @@ async def add_friend_by_kurd(kurd_code: str, current_user: User = Depends(get_cu
     if target_user['id'] == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot add yourself")
     
-    # Conversation check (mutual friendship)
+    # Conversation check - arkadaşlık kontrol
     existing = await db.conversations.find_one({
         "participants": {"$all": [current_user.id, target_user['id']]}
     })
     
     if existing:
-        return {"status": "already_friends", "user": target_user}
+        return {"status": "already_friends", "user": target_user, "conversation_id": existing.get('id')}
     
-    # Create conversation
+    # Yeni conversation oluştur - arkadaşlık sistemi
     conversation_id = str(uuid.uuid4())
     await db.conversations.insert_one({
         "id": conversation_id,
         "participants": [current_user.id, target_user['id']],
         "created_at": datetime.now(timezone.utc).isoformat(),
         "is_group": False,
-        "messages_count": 0
+        "messages_count": 0,
+        "last_message_at": datetime.now(timezone.utc).isoformat()
     })
     
     return {
@@ -478,6 +494,40 @@ async def add_friend_by_kurd(kurd_code: str, current_user: User = Depends(get_cu
         "user": target_user,
         "conversation_id": conversation_id
     }
+
+# ==================== ADMIN SETTINGS ====================
+
+@api_router.get("/admin/settings", response_model=AdminSettings)
+async def get_admin_settings(current_user: User = Depends(get_current_user)):
+    """Get admin settings - only for admin users"""
+    if current_user.username != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    settings = await db.admin_settings.find_one({"type": "global"})
+    if not settings:
+        # Default ayarlar döndür
+        return AdminSettings()
+    
+    del settings['_id']
+    return AdminSettings(**settings)
+
+@api_router.put("/admin/settings")
+async def update_admin_settings(settings: AdminSettings, current_user: User = Depends(get_current_user)):
+    """Update admin settings - only for admin users"""
+    if current_user.username != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    settings_dict = settings.model_dump()
+    settings_dict["type"] = "global"
+    settings_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.admin_settings.update_one(
+        {"type": "global"},
+        {"$set": settings_dict},
+        upsert=True
+    )
+    
+    return {"status": "settings_updated", "settings": settings}
 
 # ==================== CONVERSATION ROUTES ====================
 

@@ -18,26 +18,34 @@ const AdminSettings = ({ user }) => {
     app_description: 'End-to-End Şifreli Güvenli Mesajlaşma',
     primary_color: '#22c55e',
     secondary_color: '#020617',
-    max_upload_size: '50',
+    max_upload_size: 50,
     enable_notifications: true,
     enable_call_logs: true,
     enable_message_search: true,
     enable_encryption: true,
     enable_read_receipts: true,
-    retention_days: '30',
-    max_group_members: '100',
+    retention_days: 30,
+    max_group_members: 100,
   });
   const [copied, setCopied] = useState({});
   const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     loadSettings();
   }, []);
 
-  const loadSettings = () => {
-    const saved = localStorage.getItem('admin_settings');
-    if (saved) {
-      setSettings(JSON.parse(saved));
+  const loadSettings = async () => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${API}/admin/settings`, config);
+      setSettings(response.data);
+    } catch (error) {
+      console.log('Backend ayarları yüklenemedi, yerel ayarlar kullanılıyor');
+      const saved = localStorage.getItem('admin_settings');
+      if (saved) {
+        setSettings(JSON.parse(saved));
+      }
     }
   };
 
@@ -50,10 +58,19 @@ const AdminSettings = ({ user }) => {
   const handleSaveSettings = async () => {
     setLoading(true);
     try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const payload = {
+        ...settings,
+        max_upload_size: parseInt(settings.max_upload_size),
+        retention_days: parseInt(settings.retention_days),
+        max_group_members: parseInt(settings.max_group_members),
+      };
+      await axios.put(`${API}/admin/settings`, payload, config);
       localStorage.setItem('admin_settings', JSON.stringify(settings));
-      toast.success('✅ Ayarlar kaydedildi');
+      toast.success('✅ Ayarlar kaydedildi ve sistem uygulandı');
     } catch (error) {
-      toast.error('Ayarlar kaydedilemedi');
+      console.error('Hata:', error);
+      toast.error(error.response?.data?.detail || 'Ayarlar kaydedilemedi');
     } finally {
       setLoading(false);
     }
@@ -216,7 +233,7 @@ const AdminSettings = ({ user }) => {
                     <Input
                       type="number"
                       value={settings.max_upload_size}
-                      onChange={(e) => setSettings({...settings, max_upload_size: e.target.value})}
+                      onChange={(e) => setSettings({...settings, max_upload_size: parseInt(e.target.value) || 50})}
                       className="bg-slate-800 border-slate-700 text-white mt-2"
                       min="1"
                       max="500"
@@ -228,7 +245,7 @@ const AdminSettings = ({ user }) => {
                     <Input
                       type="number"
                       value={settings.retention_days}
-                      onChange={(e) => setSettings({...settings, retention_days: e.target.value})}
+                      onChange={(e) => setSettings({...settings, retention_days: parseInt(e.target.value) || 30})}
                       className="bg-slate-800 border-slate-700 text-white mt-2"
                       min="1"
                       max="365"
@@ -240,7 +257,7 @@ const AdminSettings = ({ user }) => {
                     <Input
                       type="number"
                       value={settings.max_group_members}
-                      onChange={(e) => setSettings({...settings, max_group_members: e.target.value})}
+                      onChange={(e) => setSettings({...settings, max_group_members: parseInt(e.target.value) || 100})}
                       className="bg-slate-800 border-slate-700 text-white mt-2"
                       min="2"
                       max="1000"

@@ -630,18 +630,37 @@ export default function ChatInterface({ user, onLogout }) {
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-slate-900 border-slate-800">
-                <DialogHeader><DialogTitle className="text-slate-100">Yeni Konuşma</DialogTitle></DialogHeader>
-                <Select value={selectedUserIds[0] || ''} onValueChange={(val) => setSelectedUserIds([val])}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700">
-                    <SelectValue placeholder="Kullanıcı seçin" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    {users.map(u => <SelectItem key={u.id} value={u.id}>{u.username}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <DialogFooter>
-                  <Button onClick={() => handleCreateConversation(false)} className="bg-[#22c55e] text-black">Oluştur</Button>
-                </DialogFooter>
+                <DialogHeader>
+                  <DialogTitle className="text-slate-100">Arkadaş Seç</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {conversations.length === 0 ? (
+                    <p className="text-slate-400 text-center py-4">Henüz arkadaşın yok. KURD kodunla birini ekle!</p>
+                  ) : (
+                    conversations.map(conv => {
+                      const friend = users.find(u => u.id === conv.participants.find(p => p !== user.id));
+                      return friend ? (
+                        <div
+                          key={conv.id}
+                          onClick={() => {
+                            setSelectedConversation(conv);
+                            setShowNewConversation(false);
+                          }}
+                          className="p-3 bg-slate-800 hover:bg-slate-700 rounded cursor-pointer transition-colors flex items-center gap-3"
+                        >
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={`${BACKEND_URL}/api/users/${friend.id}/profile-picture`} />
+                            <AvatarFallback>{friend.username[0].toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-white font-medium">{friend.username}</p>
+                            <p className="text-slate-400 text-sm">{friend.status || 'Çevrim içi'}</p>
+                          </div>
+                        </div>
+                      ) : null;
+                    })
+                  )}
+                </div>
               </DialogContent>
             </Dialog>
 
@@ -660,22 +679,25 @@ export default function ChatInterface({ user, onLogout }) {
                   className="bg-slate-800 border-slate-700"
                 />
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {users.map(u => (
-                    <label key={u.id} className="flex items-center gap-2 p-2 hover:bg-slate-800 rounded cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedUserIds.includes(u.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedUserIds([...selectedUserIds, u.id]);
+                  {conversations.map(conv => {
+                    const friend = users.find(u => u.id === conv.participants.find(p => p !== user.id));
+                    return friend ? (
+                      <label key={conv.id} className="flex items-center gap-2 p-2 hover:bg-slate-800 rounded cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedUserIds.includes(friend.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUserIds([...selectedUserIds, friend.id]);
                           } else {
                             setSelectedUserIds(selectedUserIds.filter(id => id !== u.id));
                           }
                         }}
                       />
-                      <span className="text-slate-300">{u.username}</span>
+                      <span className="text-slate-300">{friend.username}</span>
                     </label>
-                  ))}
+                  ) : null;
+                  })}
                 </div>
                 <DialogFooter>
                   <Button onClick={() => handleCreateConversation(true)} className="bg-[#22c55e] text-black">Oluştur</Button>
