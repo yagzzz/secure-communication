@@ -118,8 +118,8 @@ async def general_exception_handler(request: Request, exc: Exception):
 class UserCreate(BaseModel):
     username: str
     password: str
-    security_passphrase: str
-    role: str = "user"
+    security_passphrase: Optional[str] = "default-passphrase"
+    role: Optional[str] = "user"
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -309,9 +309,8 @@ def sanitize_input(text: str) -> str:
 # ==================== AUTH ROUTES ====================
 
 @api_router.post("/auth/register", response_model=User)
-async def register(user_data: UserCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can create users")
+async def register(user_data: UserCreate):
+    """Register new user (public endpoint, but validate uniqueness)"""
     
     existing_user = await db.users.find_one({"username": user_data.username}, {"_id": 0})
     if existing_user:
@@ -329,14 +328,14 @@ async def register(user_data: UserCreate, current_user: User = Depends(get_curre
     
     user = User(
         username=sanitize_input(user_data.username),
-        role=user_data.role,
+        role=user_data.role or "user",
         user_code=user_code,
         kurd_code=kurd_code
     )
     
     doc = user.model_dump()
     doc['hashed_password'] = get_password_hash(user_data.password)
-    doc['security_passphrase_hash'] = get_password_hash(user_data.security_passphrase)
+    doc['security_passphrase_hash'] = get_password_hash(user_data.security_passphrase or "default")
     doc['created_at'] = doc['created_at'].isoformat()
     if doc.get('last_seen'):
         doc['last_seen'] = doc['last_seen'].isoformat()
