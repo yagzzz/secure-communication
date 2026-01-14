@@ -129,12 +129,18 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # .env dosyasını oluştur
-cat > .env << 'EOF'
+# ÖNEMLİ: SECRET_KEY'i sabitleyin, her restart'ta değişmemeli!
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
+
+cat > .env << EOF
 MONGO_URL="mongodb://encryptalk_user:BAŞKA_GÜÇLÜ_ŞİFRE@localhost:27017/encryptalk"
 DB_NAME="encryptalk"
-SECRET_KEY="$(openssl rand -base64 64 | tr -d '\n')"
+SECRET_KEY="$SECRET_KEY"
 CORS_ORIGINS="https://your-domain.com"
 EOF
+
+# SECRET_KEY'in doğru kaydedildiğini kontrol et
+grep SECRET_KEY .env
 ```
 
 ### 6. Frontend Kurulumu
@@ -272,11 +278,34 @@ python init_admin.py
 ## 🔒 Güvenlik Kontrol Listesi
 
 - [ ] MongoDB kimlik doğrulaması aktif
-- [ ] Güçlü SECRET_KEY ayarlandı
+- [ ] Güçlü SECRET_KEY ayarlandı ve .env dosyasına kaydedildi
 - [ ] SSL/TLS aktif
 - [ ] Firewall kuralları tanımlandı
 - [ ] Admin şifresi değiştirildi
 - [ ] Dosya izinleri kontrol edildi
+
+## ⚠️ ÖNEMLİ UYARILAR
+
+### SECRET_KEY Hakkında
+
+**KRİTİK:** `SECRET_KEY` değeri tüm mesajlarınızın şifrelenmesi için kullanılır. Bu değer:
+
+1. ✅ **Sabit kalmalı** - Sunucu her yeniden başlatıldığında aynı değer kullanılmalı
+2. ✅ **.env dosyasında** - `backend/.env` dosyasında saklanmalı
+3. ❌ **Değişmemeli** - Değiştirilirse eski mesajlar okunamaz hale gelir
+4. ❌ **Paylaşılmamalı** - Git'e commit edilmemeli, kimseyle paylaşılmamalı
+
+**SECRET_KEY yoksa veya her seferinde yeniden oluşturulursa:**
+- Sunucu her yeniden başladığında eski mesajlar şifreli metin olarak görünür
+- Kullanıcılar mesajlarını okuyamaz
+- Veri kaybı oluşur
+
+**Kontrol için:**
+```bash
+cd /opt/encryptalk/backend
+cat .env | grep SECRET_KEY
+# Boş veya "your-secret-key-here" döndürüyorsa HEMEN düzeltin!
+```
 - [ ] Yedekleme planı hazır
 
 ## 📊 İzleme ve Bakım

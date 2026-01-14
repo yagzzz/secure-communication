@@ -341,6 +341,7 @@ export default function VideoCallModal({ conversation, user, onClose, incomingCa
     if (!incomingCall) {
       startCall();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Incoming call UI

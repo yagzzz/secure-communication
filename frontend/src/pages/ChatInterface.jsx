@@ -69,6 +69,7 @@ export default function ChatInterface({ user, onLogout }) {
     fetchUsers();
     fetchConversations();
     initSocket();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initSocket = () => {
@@ -146,6 +147,7 @@ export default function ChatInterface({ user, onLogout }) {
         clearInterval(pollingIntervalRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation]);
 
   const scrollToBottom = () => {
@@ -407,6 +409,7 @@ export default function ChatInterface({ user, onLogout }) {
 
     const callPollInterval = setInterval(checkIncomingCalls, 2000);
     return () => clearInterval(callPollInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation, showVideoCall]);
 
   const handleLogout = async () => {
