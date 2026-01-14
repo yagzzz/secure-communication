@@ -30,6 +30,7 @@ export default function NASModal({ onClose, user, config }) {
 
   useEffect(() => {
     fetchFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchFiles = async () => {

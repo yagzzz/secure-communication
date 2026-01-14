@@ -15,6 +15,7 @@ export default function StickerPicker({ onClose, onSelectSticker, config }) {
 
   useEffect(() => {
     fetchStickers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchStickers = async () => {

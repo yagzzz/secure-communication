@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Send, Image as ImageIcon, Video, FileText, MapPin, Mic,
@@ -62,13 +62,14 @@ export default function ChatInterface({ user, onLogout }) {
   const pollingIntervalRef = useRef(null);
 
   const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const config = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
 
   useEffect(() => {
     requestNotificationPermission();
     fetchUsers();
     fetchConversations();
     initSocket();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initSocket = () => {
@@ -146,6 +147,7 @@ export default function ChatInterface({ user, onLogout }) {
         clearInterval(pollingIntervalRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation]);
 
   const scrollToBottom = () => {
@@ -407,7 +409,7 @@ export default function ChatInterface({ user, onLogout }) {
 
     const callPollInterval = setInterval(checkIncomingCalls, 2000);
     return () => clearInterval(callPollInterval);
-  }, [selectedConversation, showVideoCall]);
+  }, [selectedConversation, showVideoCall, config]);
 
   const handleLogout = async () => {
     try {

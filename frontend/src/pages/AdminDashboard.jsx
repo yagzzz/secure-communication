@@ -36,6 +36,7 @@ export default function AdminDashboard({ user, onLogout }) {
   React.useEffect(() => {
     fetchUsers();
     fetchMetadata();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUsers = async () => {
