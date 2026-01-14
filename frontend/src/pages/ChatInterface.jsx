@@ -649,10 +649,12 @@ export default function ChatInterface({ user, onLogout }) {
               </div>
 
               <div className="space-y-2">
-                {conversations.length === 0 ? (
-                  <p className="text-slate-400 text-center py-8 text-sm">Henüz konuşma yok</p>
+                {filteredConversations.length === 0 ? (
+                  <p className="text-slate-400 text-center py-8 text-sm">
+                    {searchQuery ? 'Konuşma bulunamadı' : 'Henüz konuşma yok'}
+                  </p>
                 ) : (
-                  conversations.map(conv => (
+                  filteredConversations.map(conv => (
                     <div
                       key={conv.id}
                       onClick={() => {
@@ -754,10 +756,12 @@ export default function ChatInterface({ user, onLogout }) {
                   <DialogTitle className="text-slate-100">Arkadaş Seç</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {conversations.length === 0 ? (
-                    <p className="text-slate-400 text-center py-4">Henüz arkadaşın yok. KURD kodunla birini ekle!</p>
+                  {filteredConversations.length === 0 ? (
+                    <p className="text-slate-400 text-center py-4">
+                      {searchQuery ? 'Konuşma bulunamadı' : 'Henüz arkadaşın yok. KURD kodunla birini ekle!'}
+                    </p>
                   ) : (
-                    conversations.map(conv => {
+                    filteredConversations.map(conv => {
                       const friend = users.find(u => u.id === conv.participants.find(p => p !== user.id));
                       return friend ? (
                         <div
@@ -799,25 +803,31 @@ export default function ChatInterface({ user, onLogout }) {
                   className="bg-slate-800 border-slate-700"
                 />
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {conversations.map(conv => {
-                    const friend = users.find(u => u.id === conv.participants.find(p => p !== user.id));
-                    return friend ? (
-                      <label key={conv.id} className="flex items-center gap-2 p-2 hover:bg-slate-800 rounded cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={selectedUserIds.includes(friend.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedUserIds([...selectedUserIds, friend.id]);
-                          } else {
-                            setSelectedUserIds(selectedUserIds.filter(id => id !== u.id));
-                          }
-                        }}
-                      />
-                      <span className="text-slate-300">{friend.username}</span>
-                    </label>
-                  ) : null;
-                  })}
+                  {filteredConversations.length === 0 ? (
+                    <p className="text-slate-400 text-center py-4">
+                      {searchQuery ? 'Konuşma bulunamadı' : 'Arkadaş listesi boş'}
+                    </p>
+                  ) : (
+                    filteredConversations.map(conv => {
+                      const friend = users.find(u => u.id === conv.participants.find(p => p !== user.id));
+                      return friend ? (
+                        <label key={conv.id} className="flex items-center gap-2 p-2 hover:bg-slate-800 rounded cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedUserIds.includes(friend.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUserIds([...selectedUserIds, friend.id]);
+                              } else {
+                                setSelectedUserIds(selectedUserIds.filter(id => id !== friend.id));
+                              }
+                            }}
+                          />
+                          <span className="text-slate-300">{friend.username}</span>
+                        </label>
+                      ) : null;
+                    })
+                  )}
                 </div>
                 <DialogFooter>
                   <Button onClick={() => handleCreateConversation(true)} className="bg-[#22c55e] text-black">Oluştur</Button>
