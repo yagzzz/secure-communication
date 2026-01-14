@@ -756,12 +756,10 @@ export default function ChatInterface({ user, onLogout }) {
                   <DialogTitle className="text-slate-100">Arkadaş Seç</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {filteredConversations.length === 0 ? (
-                    <p className="text-slate-400 text-center py-4">
-                      {searchQuery ? 'Konuşma bulunamadı' : 'Henüz arkadaşın yok. KURD kodunla birini ekle!'}
-                    </p>
+                  {conversations.length === 0 ? (
+                    <p className="text-slate-400 text-center py-4">Henüz arkadaşın yok. KURD kodunla birini ekle!</p>
                   ) : (
-                    filteredConversations.map(conv => {
+                    conversations.map(conv => {
                       const friend = users.find(u => u.id === conv.participants.find(p => p !== user.id));
                       return friend ? (
                         <div
@@ -803,12 +801,7 @@ export default function ChatInterface({ user, onLogout }) {
                   className="bg-slate-800 border-slate-700"
                 />
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {filteredConversations.length === 0 ? (
-                    <p className="text-slate-400 text-center py-4">
-                      {searchQuery ? 'Konuşma bulunamadı' : 'Arkadaş listesi boş'}
-                    </p>
-                  ) : (
-                    filteredConversations.map(conv => {
+                  {conversations.map(conv => {
                       const friend = users.find(u => u.id === conv.participants.find(p => p !== user.id));
                       return friend ? (
                         <label key={conv.id} className="flex items-center gap-2 p-2 hover:bg-slate-800 rounded cursor-pointer">
@@ -826,8 +819,7 @@ export default function ChatInterface({ user, onLogout }) {
                           <span className="text-slate-300">{friend.username}</span>
                         </label>
                       ) : null;
-                    })
-                  )}
+                    })}
                 </div>
                 <DialogFooter>
                   <Button onClick={() => handleCreateConversation(true)} className="bg-[#22c55e] text-black">Oluştur</Button>
