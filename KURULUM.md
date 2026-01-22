@@ -126,7 +126,11 @@ python3.11 -m venv venv
 source venv/bin/activate
 
 # Bağımlılıkları yükle
-pip install -r requirements.txt
+pip install -r requirements_app.txt
+
+# Alternatif: hızlı env girişi
+# ../scripts/enter_backend_env.sh
+# pip install -r requirements_app.txt
 
 # .env dosyasını oluştur
 cat > .env << 'EOF'

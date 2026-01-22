@@ -1,391 +1,429 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Save, Copy, Check, Globe, Eye, Lock, Zap, Bell, Database, Server, Shield, Gauge, AlertCircle, Code } from 'lucide-react';
+import { Settings, Copy, Check, Globe, Eye, Lock, Server, Shield, AlertCircle, Code, Info, Activity, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useDeviceUnlock } from '@/contexts/DeviceUnlockContext';
+import { useUser } from '@/contexts/UserContext';
+import { formatPublicHandle, copyToClipboard } from '@/utils/identity';
+import { createDebugReport } from '@/utils/debugReport';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
-const AdminSettings = ({ user }) => {
-  const [settings, setSettings] = useState({
-    app_title: 'EncrypTalk',
-    app_description: 'End-to-End Şifreli Güvenli Mesajlaşma',
-    primary_color: '#22c55e',
-    secondary_color: '#020617',
-    max_upload_size: 50,
-    enable_notifications: true,
-    enable_call_logs: true,
-    enable_message_search: true,
-    enable_encryption: true,
-    enable_read_receipts: true,
-    retention_days: 30,
-    max_group_members: 100,
-  });
+const AdminSettings = () => {
+  const { user } = useUser();
+  const { settings: userSettings } = useSettings();
+  const { isUnlocked } = useDeviceUnlock();
+  const [systemInfo, setSystemInfo] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState({ status: 'unknown', lastCheck: null });
   const [copied, setCopied] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [lastErrorCode, setLastErrorCode] = useState(null);
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    loadSettings();
+    loadSystemInfo();
+    checkConnection();
   }, []);
 
-  const loadSettings = async () => {
+  const loadSystemInfo = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${API}/admin/settings`, config);
-      setSettings(response.data);
+      const response = await axios.get(`${API}/admin/metadata`, config);
+      setSystemInfo(response.data);
     } catch (error) {
-      console.log('Backend ayarları yüklenemedi, yerel ayarlar kullanılıyor');
-      const saved = localStorage.getItem('admin_settings');
-      if (saved) {
-        setSettings(JSON.parse(saved));
-      }
+      setSystemInfo(null);
+      setLastErrorCode('SYSTEM_INFO_UNAVAILABLE');
     }
   };
 
-  const handleCopy = (text, key) => {
-    navigator.clipboard.writeText(text);
-    setCopied({ ...copied, [key]: true });
-    setTimeout(() => setCopied({ ...copied, [key]: false }), 2000);
+  const checkConnection = async () => {
+    try {
+      const start = Date.now();
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.get(`${API}/health`, config);
+      const latency = Date.now() - start;
+      setConnectionStatus({
+        status: 'connected',
+        lastCheck: new Date().toISOString(),
+        latency: `${latency}ms`,
+        error: null
+      });
+      setLastErrorCode(null);
+    } catch (error) {
+      setConnectionStatus({
+        status: 'error',
+        lastCheck: new Date().toISOString(),
+        error: error.message,
+        latency: null
+      });
+      setLastErrorCode('BACKEND_UNREACHABLE');
+    }
   };
 
-  const handleSaveSettings = async () => {
-    setLoading(true);
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const payload = {
-        ...settings,
-        max_upload_size: parseInt(settings.max_upload_size),
-        retention_days: parseInt(settings.retention_days),
-        max_group_members: parseInt(settings.max_group_members),
-      };
-      await axios.put(`${API}/admin/settings`, payload, config);
-      localStorage.setItem('admin_settings', JSON.stringify(settings));
-      toast.success('✅ Ayarlar kaydedildi ve sistem uygulandı');
-    } catch (error) {
-      console.error('Hata:', error);
-      toast.error(error.response?.data?.detail || 'Ayarlar kaydedilemedi');
-    } finally {
-      setLoading(false);
+  const handleCopy = async (text, key) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      setCopied({ ...copied, [key]: true });
+      toast.success('Kopyalandı!');
+      setTimeout(() => setCopied({ ...copied, [key]: false }), 2000);
+    } else {
+      toast.error('Kopyalama başarısız');
+    }
+  };
+
+  const generateDebugReport = () => {
+    const report = createDebugReport({
+      appVersion: 'v1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      platform: navigator.platform,
+      theme: userSettings.theme,
+      accent: userSettings.accent,
+      isUnlocked,
+      lastErrorCode,
+      latency: connectionStatus.latency
+    });
+    return JSON.stringify(report, null, 2);
+  };
+
+  const copyDebugReport = async () => {
+    const report = generateDebugReport();
+    const success = await copyToClipboard(report);
+    if (success) {
+      toast.success('📋 Debug raporu kopyalandı');
+    } else {
+      toast.error('Rapor kopyalanamadı');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-[#22c55e]/10 p-3 rounded-lg border border-[#22c55e]/20">
-              <Settings className="w-8 h-8 text-[#22c55e]" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-white">Admin Kontrol Paneli</h1>
-              <p className="text-slate-400 mt-1">Sistem konfigürasyonu, güvenlik ve izleme</p>
-            </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-[#22c55e]/10 p-3 rounded-lg border border-[#22c55e]/20">
+            <Info className="w-6 h-6 text-[#22c55e]" />
           </div>
-        </motion.div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Sistem Bilgileri</h2>
+            <p className="text-slate-400 text-sm">Görüntüleme ve teşhis (değişiklik yapmaz)</p>
+          </div>
+        </div>
+      </motion.div>
 
-        <Tabs defaultValue="branding" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-900/50 border border-slate-800 rounded-lg">
-            <TabsTrigger value="branding">🎨 Branding</TabsTrigger>
-            <TabsTrigger value="features">⚡ Özellikler</TabsTrigger>
-            <TabsTrigger value="security">🔒 Güvenlik</TabsTrigger>
-            <TabsTrigger value="system">🖥️ Sistem</TabsTrigger>
-            <TabsTrigger value="info">ℹ️ Bilgi</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="system" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-slate-900/50 border border-slate-800 rounded-lg">
+          <TabsTrigger value="system">🖥️ Sistem</TabsTrigger>
+          <TabsTrigger value="identity">🆔 Kimlik</TabsTrigger>
+          <TabsTrigger value="diagnostics">🔍 Teşhis</TabsTrigger>
+          <TabsTrigger value="debug">🐛 Debug</TabsTrigger>
+        </TabsList>
 
-          {/* BRANDING */}
-          <TabsContent value="branding" className="space-y-6 mt-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="border-b border-slate-800">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-[#22c55e]" />
-                    Uygulama Özellikleri
-                  </CardTitle>
-                  <CardDescription>Uygulamanın adı ve açıklaması</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                  <div>
-                    <Label className="text-slate-300 font-semibold">Uygulama Adı</Label>
-                    <Input
-                      value={settings.app_title}
-                      onChange={(e) => setSettings({...settings, app_title: e.target.value})}
-                      className="bg-slate-800 border-slate-700 text-white mt-2"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-slate-300 font-semibold">Açıklama</Label>
-                    <Input
-                      value={settings.app_description}
-                      onChange={(e) => setSettings({...settings, app_description: e.target.value})}
-                      className="bg-slate-800 border-slate-700 text-white mt-2"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-700">
-                    <div>
-                      <Label className="text-slate-300 font-semibold">Ana Renk</Label>
-                      <div className="flex gap-2 mt-2">
-                        <input
-                          type="color"
-                          value={settings.primary_color}
-                          onChange={(e) => setSettings({...settings, primary_color: e.target.value})}
-                          className="w-14 h-10 rounded border border-slate-700 cursor-pointer"
-                        />
-                        <Input
-                          value={settings.primary_color}
-                          onChange={(e) => setSettings({...settings, primary_color: e.target.value})}
-                          className="flex-1 bg-slate-800 border-slate-700 text-white font-mono text-sm"
-                        />
-                        <Button
-                          onClick={() => handleCopy(settings.primary_color, 'primary')}
-                          variant="outline"
-                          className="border-slate-700"
-                        >
-                          {copied.primary ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
+        {/* SYSTEM INFO */}
+        <TabsContent value="system" className="space-y-4 mt-6">
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Globe className="w-5 h-5 text-[#22c55e]" />
+                Uygulama Bilgileri
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                Sadece görüntüleme - değişiklik yapmaz
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                { label: 'Versiyon', value: 'v1.0.0', icon: Code },
+                { label: 'Ortam', value: process.env.NODE_ENV || 'development', icon: Server },
+                { label: 'Platform', value: navigator.platform, icon: Activity },
+                { label: 'Tema', value: userSettings.theme === 'dark' ? 'Karanlık Mod' : 'Aydınlık Mod', icon: Eye },
+                { label: 'Accent', value: userSettings.accent.toUpperCase(), icon: Eye },
+              ].map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className="flex justify-between items-center p-3 bg-slate-800/50 rounded border border-slate-700/50">
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-4 h-4 text-slate-400" />
+                      <span className="text-slate-300 text-sm">{item.label}</span>
                     </div>
+                    <span className="text-white font-mono text-sm">{item.value}</span>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
 
-                    <div>
-                      <Label className="text-slate-300 font-semibold">İkincil Renk</Label>
-                      <div className="flex gap-2 mt-2">
-                        <input
-                          type="color"
-                          value={settings.secondary_color}
-                          onChange={(e) => setSettings({...settings, secondary_color: e.target.value})}
-                          className="w-14 h-10 rounded border border-slate-700 cursor-pointer"
-                        />
-                        <Input
-                          value={settings.secondary_color}
-                          onChange={(e) => setSettings({...settings, secondary_color: e.target.value})}
-                          className="flex-1 bg-slate-800 border-slate-700 text-white font-mono text-sm"
-                        />
-                        <Button
-                          onClick={() => handleCopy(settings.secondary_color, 'secondary')}
-                          variant="outline"
-                          className="border-slate-700"
-                        >
-                          {copied.secondary ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Server className="w-5 h-5 text-purple-400" />
+                API Endpoints
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <Label className="text-slate-300 text-xs">Backend URL</Label>
+                <div className="flex gap-2 mt-2">
+                  <div className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono text-sm">
+                    {BACKEND_URL}
+                  </div>
+                  <Button
+                    onClick={() => handleCopy(BACKEND_URL, 'backend_url')}
+                    variant="outline"
+                    className="border-slate-700"
+                  >
+                    {copied.backend_url ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* IDENTITY */}
+        <TabsContent value="identity" className="space-y-4 mt-6">
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-[#22c55e]" />
+                Kimlik Bilgileri
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                Public handle paylaşım için, internal ID teknik bağlantı için
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <TooltipProvider>
+                {/* Public Handle */}
+                <div className="p-4 bg-slate-800/50 rounded border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-slate-300 text-sm">Public Handle</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertCircle className="w-4 h-4 text-slate-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Paylaşmak için görünen kod</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-
-          {/* FEATURES */}
-          <TabsContent value="features" className="space-y-6 mt-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="border-b border-slate-800">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-[#22c55e]" />
-                    Özellik Kontrolleri
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-6">
-                  {[
-                    { key: 'enable_notifications', label: '🔔 Bildirimler' },
-                    { key: 'enable_call_logs', label: '📞 Çağrı Günlükleri' },
-                    { key: 'enable_message_search', label: '🔍 Mesaj Arama' },
-                    { key: 'enable_encryption', label: '🔐 Şifreleme' },
-                    { key: 'enable_read_receipts', label: '✅ Okundu Belirteci' },
-                  ].map((feature) => (
-                    <div
-                      key={feature.key}
-                      className="flex items-center justify-between p-4 bg-slate-800/50 rounded border border-slate-700"
+                  <div className="flex gap-2">
+                    <div className="flex-1 bg-slate-900 border border-slate-700 rounded px-4 py-3 text-[#22c55e] font-mono text-lg font-bold">
+                      {formatPublicHandle(user.user_code || 'N/A', userSettings.kurdPrefixEnabled)}
+                    </div>
+                    <Button
+                      onClick={() => handleCopy(formatPublicHandle(user.user_code || '', userSettings.kurdPrefixEnabled), 'public_handle')}
+                      variant="outline"
+                      className="border-slate-700"
                     >
-                      <span className="text-white font-semibold">{feature.label}</span>
-                      <input
-                        type="checkbox"
-                        checked={settings[feature.key]}
-                        onChange={(e) => setSettings({...settings, [feature.key]: e.target.checked})}
-                        className="w-6 h-6 cursor-pointer accent-[#22c55e]"
-                      />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                      {copied.public_handle ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    * KURD prefix ayarı Settings'te değiştirilebilir (sadece görünümü etkiler)
+                  </p>
+                </div>
 
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="border-b border-slate-800">
-                  <CardTitle className="text-white">İleri Ayarlar</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-6">
+                {/* Internal ID */}
+                <div className="p-4 bg-slate-800/50 rounded border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-slate-300 text-sm">Internal ID</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertCircle className="w-4 h-4 text-slate-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Bağlantı için kullanılan teknik ID</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <span className="text-xs text-slate-500">İleri Düzey</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 bg-slate-900 border border-slate-700 rounded px-4 py-3 text-slate-400 font-mono text-sm">
+                      {user.user_code || 'N/A'}
+                    </div>
+                    <Button
+                      onClick={() => handleCopy(user.user_code || '', 'internal_id')}
+                      variant="outline"
+                      className="border-slate-700"
+                    >
+                      {copied.internal_id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* User Info */}
+                <div className="p-4 bg-slate-800/50 rounded border border-slate-700/50">
+                  <Label className="text-slate-300 text-sm mb-3 block">Hesap Bilgileri</Label>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Kullanıcı Adı</span>
+                      <span className="text-white font-medium">{user.username}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Rol</span>
+                      <span className="text-[#22c55e] font-medium">
+                        {user.role === 'admin' ? '👑 Admin' : '👤 Kullanıcı'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </TooltipProvider>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* DIAGNOSTICS */}
+        <TabsContent value="diagnostics" className="space-y-4 mt-6">
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-blue-400" />
+                Bağlantı Durumu
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                Backend bağlantı teşhisi
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded border border-slate-700/50">
+                <div>
+                  <p className="text-sm text-slate-300 mb-1">Durum</p>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      connectionStatus.status === 'connected' ? 'bg-green-500 animate-pulse' : 
+                      connectionStatus.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
+                    }`} />
+                    <span className="text-white font-medium">
+                      {connectionStatus.status === 'connected' ? 'Bağlı' : 
+                       connectionStatus.status === 'error' ? 'Hata' : 'Bilinmiyor'}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  onClick={checkConnection}
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-700"
+                >
+                  Yenile
+                </Button>
+              </div>
+
+              {connectionStatus.latency && (
+                <div className="p-4 bg-slate-800/50 rounded border border-slate-700/50">
+                  <p className="text-sm text-slate-300 mb-1">Gecikme</p>
+                  <p className="text-white font-mono text-lg">{connectionStatus.latency}</p>
+                </div>
+              )}
+
+              {connectionStatus.error && (
+                <div className="p-4 bg-red-900/20 rounded border border-red-700/50">
+                  <p className="text-sm text-red-300 mb-1">Hata</p>
+                  <p className="text-red-200 text-xs font-mono">{connectionStatus.error}</p>
+                </div>
+              )}
+
+              {connectionStatus.lastCheck && (
+                <div className="text-xs text-slate-500 text-center">
+                  Son kontrol: {new Date(connectionStatus.lastCheck).toLocaleString('tr-TR')}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-[#22c55e]" />
+                Güvenlik Durumu
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {[
+                { label: '✓ E2E Şifreleme', status: 'active' },
+                { label: '✓ JWT Token Auth', status: 'active' },
+                { label: '✓ CORS Koruması', status: 'active' },
+                { label: window.location.protocol === 'https:' ? '✓ HTTPS Aktif' : '⚠️ HTTP (SSL Önerilir)', status: window.location.protocol === 'https:' ? 'active' : 'warning' }
+              ].map((item, i) => (
+                <div 
+                  key={i} 
+                  className={`p-3 rounded border ${
+                    item.status === 'active' 
+                      ? 'bg-green-900/20 border-green-700/50' 
+                      : 'bg-yellow-900/20 border-yellow-700/50'
+                  }`}
+                >
+                  <p className={`text-sm font-medium ${
+                    item.status === 'active' ? 'text-green-300' : 'text-yellow-300'
+                  }`}>
+                    {item.label}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* DEBUG */}
+        <TabsContent value="debug" className="space-y-4 mt-6">
+          {userSettings.debugMode ? (
+            <Card className="bg-slate-900/50 border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-orange-400" />
+                  Debug Raporu
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Sorun bildirimi için tam sistem raporu
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-slate-800 rounded border border-slate-700 font-mono text-xs text-slate-300 max-h-64 overflow-y-auto">
+                  <pre>{generateDebugReport()}</pre>
+                </div>
+                <Button
+                  onClick={copyDebugReport}
+                  className="w-full bg-[#22c55e] text-black hover:bg-[#16a34a]"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Raporu Kopyala
+                </Button>
+                <p className="text-xs text-slate-500 text-center">
+                  Bu raporu teknik destek ekibiyle paylaşabilirsiniz
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-slate-900/50 border-slate-800 border-yellow-700/30">
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto" />
                   <div>
-                    <Label className="text-slate-300 font-semibold">Max Yükleme (MB)</Label>
-                    <Input
-                      type="number"
-                      value={settings.max_upload_size}
-                      onChange={(e) => setSettings({...settings, max_upload_size: parseInt(e.target.value) || 50})}
-                      className="bg-slate-800 border-slate-700 text-white mt-2"
-                      min="1"
-                      max="500"
-                    />
+                    <h3 className="text-white font-medium mb-2">Debug Modu Kapalı</h3>
+                    <p className="text-slate-400 text-sm">
+                      Debug raporunu görmek için Settings'ten Debug Mode'u açın
+                    </p>
                   </div>
-
-                  <div>
-                    <Label className="text-slate-300 font-semibold">Mesaj Bekletme (Gün)</Label>
-                    <Input
-                      type="number"
-                      value={settings.retention_days}
-                      onChange={(e) => setSettings({...settings, retention_days: parseInt(e.target.value) || 30})}
-                      className="bg-slate-800 border-slate-700 text-white mt-2"
-                      min="1"
-                      max="365"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-slate-300 font-semibold">Max Grup Üyeleri</Label>
-                    <Input
-                      type="number"
-                      value={settings.max_group_members}
-                      onChange={(e) => setSettings({...settings, max_group_members: parseInt(e.target.value) || 100})}
-                      className="bg-slate-800 border-slate-700 text-white mt-2"
-                      min="2"
-                      max="1000"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-
-          {/* SECURITY */}
-          <TabsContent value="security" className="space-y-6 mt-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="border-b border-slate-800">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-[#22c55e]" />
-                    Güvenlik
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  {[
-                    '✓ E2E Şifreleme Etkin',
-                    '✓ Argon2 Şifre Hashing',
-                    '✓ JWT Token Doğrulaması',
-                    '✓ CORS Koruması'
-                  ].map((item, i) => (
-                    <div key={i} className="bg-green-900/20 border border-green-700/50 rounded p-3">
-                      <p className="text-green-300 text-sm font-semibold">{item}</p>
-                    </div>
-                  ))}
-
-                  <div className="bg-yellow-900/20 border border-yellow-700/50 rounded p-4 mt-4">
-                    <p className="text-yellow-300 text-sm font-semibold">⚠️ SSL/TLS Kullanın</p>
-                    <p className="text-yellow-200/70 text-xs mt-1">Production ortamında HTTPS şifreli bağlantı kullanılmalıdır.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-
-          {/* SYSTEM */}
-          <TabsContent value="system" className="space-y-6 mt-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="border-b border-slate-800">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Server className="w-5 h-5 text-purple-400" />
-                    API Endpoints
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  <div>
-                    <Label className="text-slate-300 font-semibold text-sm">Backend URL</Label>
-                    <div className="flex gap-2 mt-2">
-                      <Input
-                        value={BACKEND_URL}
-                        readOnly
-                        className="bg-slate-800 border-slate-700 text-white font-mono text-sm"
-                      />
-                      <Button
-                        onClick={() => handleCopy(BACKEND_URL, 'api')}
-                        variant="outline"
-                        className="border-slate-700"
-                      >
-                        {copied.api ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700">
-                    <div className="bg-slate-800/50 p-3 rounded">
-                      <p className="text-slate-400 text-xs">Health</p>
-                      <p className="text-white font-mono text-sm mt-1">/api/health</p>
-                    </div>
-                    <div className="bg-slate-800/50 p-3 rounded">
-                      <p className="text-slate-400 text-xs">WebSocket</p>
-                      <p className="text-white font-mono text-sm mt-1">ws://localhost:8001</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-
-          {/* INFO */}
-          <TabsContent value="info" className="space-y-6 mt-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Card className="bg-slate-900/50 border-slate-800">
-                <CardHeader className="border-b border-slate-800">
-                  <CardTitle className="text-white">Sistem Bilgileri</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-3">
-                  {[
-                    ['Uygulama', 'EncrypTalk v1.0.0', '#22c55e'],
-                    ['API', 'v1.0.0', '#22c55e'],
-                    ['Database', 'MongoDB', '#3b82f6'],
-                    ['WebSocket', 'Socket.IO', '#10b981'],
-                    ['Tema', 'Cyberpunk Dark', '#a855f7'],
-                    ['Admin', user?.username || 'N/A', '#64748b']
-                  ].map((info, i) => (
-                    <div key={i} className="flex justify-between p-3 bg-slate-800/50 rounded">
-                      <span className="text-slate-300">{info[0]}</span>
-                      <span className="font-mono font-bold" style={{ color: info[2] }}>{info[1]}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Save Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-8 flex justify-end gap-4"
-        >
-          <Button
-            onClick={handleSaveSettings}
-            disabled={loading}
-            className="bg-[#22c55e] hover:bg-[#16a34a] text-black font-bold gap-2 px-8"
-          >
-            <Save className="w-5 h-5" />
-            {loading ? 'Kaydediliyor...' : 'Ayarları Kaydet'}
-          </Button>
-        </motion.div>
-      </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

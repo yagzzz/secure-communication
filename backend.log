@@ -1,1 +1,4 @@
-WARNING:  You must pass the application as an import string to enable 'reload' or 'workers'.
+Traceback (most recent call last):
+  File "/home/yagobaba/Masaüstü/secure-communication/secure-communication/backend/server.py", line 15, in <module>
+    from argon2 import PasswordHasher
+ModuleNotFoundError: No module named 'argon2'

@@ -1,67 +1,46 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
+import AppProviders from '@/contexts/AppProviders';
+import { useDeviceUnlock } from '@/contexts/DeviceUnlockContext';
+import { useUser } from '@/contexts/UserContext';
+import { requireAuth, requireUnlock, redirectRoot, requireRole } from '@/routes/guards';
 import Login from '@/pages/Login';
+import UnlockScreen from '@/pages/UnlockScreen';
+import Home from '@/pages/Home';
 import AdminDashboard from '@/pages/AdminDashboard';
 import ChatInterface from '@/pages/ChatInterface';
+import Settings from '@/pages/Settings';
 import '@/utils/resizeObserverFix';
 import '@/App.css';
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [branding, setBranding] = useState({ primary_color: '#22c55e', secondary_color: '#1e293b', app_title: 'EncrypTalk' });
+// Protected Route wrapper that checks both auth and unlock
+const ProtectedRoute = ({ children, requiresAuth = true, requiresUnlock = false, isAuthenticated }) => {
+  const { isUnlocked } = useDeviceUnlock();
+  const location = useLocation();
+
+  const authRedirect = requiresAuth ? requireAuth({ isAuthenticated }) : null;
+  if (authRedirect) {
+    return <Navigate to={authRedirect} state={{ from: location }} replace />;
+  }
+
+  const unlockRedirect = requiresUnlock ? requireUnlock({ isUnlocked }) : null;
+  if (unlockRedirect) {
+    return <Navigate to={unlockRedirect} state={{ from: location }} replace />;
+  }
+
+  return children;
+};
+
+const AppRoutes = () => {
+  const { isAuthenticated, role, loading } = useUser();
+  const { isUnlocked } = useDeviceUnlock();
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
     
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-      // Load admin branding settings
-      loadBrandingSettings();
-    }
-    setLoading(false);
+    // Theme is handled at app startup
   }, []);
-
-  const loadBrandingSettings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001/api'}/admin/settings`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      if (response.ok) {
-        const settings = await response.json();
-        setBranding({
-          primary_color: settings.primary_color || '#22c55e',
-          secondary_color: settings.secondary_color || '#1e293b',
-          app_title: settings.app_title || 'EncrypTalk'
-        });
-        // Apply CSS variables for theme
-        document.documentElement.style.setProperty('--primary-color', settings.primary_color || '#22c55e');
-        document.documentElement.style.setProperty('--secondary-color', settings.secondary_color || '#1e293b');
-      }
-    } catch (error) {
-      console.error('Branding yükleme hatası:', error);
-    }
-  };
-
-  const handleLogin = (userData, token) => {
-    setUser(userData);
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    // Load branding settings after login
-    setTimeout(() => loadBrandingSettings(), 100);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  };
 
   if (loading) {
     return (
@@ -75,23 +54,82 @@ function App() {
     <div className="App dark">
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
           <Route
             path="/login"
-            element={!user ? <Login onLogin={handleLogin} /> : <Navigate to={user.role === 'admin' ? '/admin' : '/chat'} />}
+            element={!isAuthenticated ? <Login /> : <Navigate to="/unlock" replace />}
           />
-          <Route
-            path="/admin"
-            element={user && user.role === 'admin' ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/chat"
-            element={user ? <ChatInterface user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
-          />
-          <Route path="/" element={<Navigate to={user ? (user.role === 'admin' ? '/admin' : '/chat') : '/login'} />} />
-        </Routes>
+
+            {/* Unlock screen - requires auth but not unlock */}
+            <Route
+              path="/unlock"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated} requiresAuth={true} requiresUnlock={false}>
+                  <UnlockScreen />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Protected routes - require both auth and unlock */}
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated} requiresAuth={true} requiresUnlock={true}>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated} requiresAuth={true} requiresUnlock={true}>
+                  <ChatInterface />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated} requiresAuth={true} requiresUnlock={true}>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin"
+              element={
+                requireRole({ role, requiredRole: 'admin' }) ? (
+                  <Navigate to="/login" replace />
+                ) : (
+                  <ProtectedRoute isAuthenticated={isAuthenticated} requiresAuth={true} requiresUnlock={true}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                )
+              }
+            />
+
+            {/* Root redirect with proper logic */}
+            <Route
+              path="/"
+              element={
+                <Navigate to={redirectRoot({ isAuthenticated, isUnlocked })} replace />
+              }
+            />
+          </Routes>
       </BrowserRouter>
       <Toaster position="top-right" />
     </div>
+  );
+};
+
+function App() {
+  return (
+    <AppProviders>
+      <AppRoutes />
+    </AppProviders>
   );
 }
 

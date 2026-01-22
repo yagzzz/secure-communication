@@ -40,6 +40,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+*.pid
 dump.rdb
 
 # System files

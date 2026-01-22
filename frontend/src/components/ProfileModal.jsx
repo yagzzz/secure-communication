@@ -226,17 +226,17 @@ export default function ProfileModal({ user, onClose, config }) {
 
           {/* Friends Tab */}
           <TabsContent value="friends" className="space-y-4 mt-6">
-            {/* KURD CODE */}
+            {/* PUBLIC HANDLE */}
             <div className="space-y-2">
               <Label className="text-slate-300 flex items-center gap-2">
                 <User className="w-4 h-4 text-[#22c55e]" />
-                KURD Kodu (Arkadaş Ekleme)
+                Public Handle
               </Label>
               <div className="flex gap-2">
                 <Input
-                  value={user.kurd_code || ''}
+                  value={formatPublicHandle(user.user_code || '', settings.kurdPrefixEnabled)}
                   disabled
-                  className="bg-slate-800 border-slate-700 text-[#22c55e] font-mono font-bold"
+                  className="bg-slate-800 border-slate-700 text-[#22c55e] font-mono font-bold text-lg"
                 />
                 <Button
                   onClick={handleCopyKurdCode}
@@ -246,7 +246,9 @@ export default function ProfileModal({ user, onClose, config }) {
                   {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
-              <p className="text-xs text-slate-500">Bu kodu arkadaşlarınızla paylaşın</p>
+              <p className="text-xs text-slate-500">
+                Paylaşmak için görünen kod - KURD öneki Settings'te değiştirilebilir
+              </p>
             </div>
 
             {/* ADD FRIEND BY KURD */}

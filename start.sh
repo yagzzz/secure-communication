@@ -1,206 +1,70 @@
 #!/bin/bash
 
 # ============================================================
-# EncrypTalk Quick Start Script - Universal
-# Compatible with: Ubuntu 22.04+, Raspberry Pi OS Lite
-# Version: 1.0
+# EncrypTalk Frontend Start Script (Idempotent)
 # ============================================================
 
-set -e
+set -euo pipefail
 
-# Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Functions
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[✓]${NC} $1"; }
+log_error() { echo -e "${RED}[✗]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 
-log_success() {
-    echo -e "${GREEN}[✓]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[✗]${NC} $1"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[!]${NC} $1"
-}
-
-# Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+REPO_ROOT="$SCRIPT_DIR"
 
-# Detect OS
-detect_os() {
-    if grep -q "Raspberry Pi" /proc/model 2>/dev/null || grep -q "BCM" /proc/cpuinfo 2>/dev/null; then
-        echo "raspberry"
-    elif [ -f /etc/os-release ]; then
-        . /etc/os-release
-        if [[ "$ID" == "ubuntu" ]]; then
-            echo "ubuntu"
-        else
-            echo "other"
-        fi
-    else
-        echo "other"
-    fi
-}
+RUN_TESTS=0
+RUN_BUILD=0
 
-OS=$(detect_os)
-log_info "Detected OS: $OS"
+for arg in "$@"; do
+  case "$arg" in
+    --test) RUN_TESTS=1 ;;
+    --build) RUN_BUILD=1 ;;
+    --no-test) RUN_TESTS=0 ;;
+    --no-build) RUN_BUILD=0 ;;
+    *) log_warn "Bilinmeyen argüman: $arg" ;;
+  esac
+done
 
-# ============================================================
-# BACKEND START
-# ============================================================
-start_backend() {
-    log_info "Starting Backend..."
-    
-    if [ ! -d "backend/venv" ]; then
-        log_warn "Virtual environment not found. Creating one..."
-        cd backend
-        python3.11 -m venv venv 2>/dev/null || python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements_clean.txt
-        cd ..
-    fi
-    
-    if [ ! -f "backend/.env" ]; then
-        log_warn "backend/.env not found!"
-        log_info "Creating from template and setup admin..."
-        cp backend/.env.example backend/.env
-        
-        # Generate SECRET_KEY
-        SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))" 2>/dev/null || echo "change-this-secret-key-in-production")
-        sed -i "s|your-very-secure-random-key-here-change-in-production|$SECRET_KEY|g" backend/.env
-        
-        # Admin setup
-        read -p "Enter admin username (default: admin): " ADMIN_USER
-        ADMIN_USER=${ADMIN_USER:-admin}
-        read -sp "Enter admin password (default: admin123456): " ADMIN_PASS
-        ADMIN_PASS=${ADMIN_PASS:-admin123456}
-        echo ""
-        read -sp "Enter admin passphrase for encryption (default: admin-passphrase): " ADMIN_PHRASE
-        ADMIN_PHRASE=${ADMIN_PHRASE:-admin-passphrase}
-        echo ""
-        
-        sed -i "s|ADMIN_USERNAME=.*|ADMIN_USERNAME=$ADMIN_USER|g" backend/.env
-        sed -i "s|ADMIN_PASSWORD=.*|ADMIN_PASSWORD=$ADMIN_PASS|g" backend/.env
-        sed -i "s|ADMIN_PASSPHRASE=.*|ADMIN_PASSPHRASE=$ADMIN_PHRASE|g" backend/.env
-        
-        log_success "✅ .env configured with admin credentials"
-        log_info "Admin username: $ADMIN_USER"
-        log_info "Admin password: $ADMIN_PASS"
-    fi
-    
-    cd backend
-    source venv/bin/activate
-    
-    # Start backend in background
-    python server.py > ../backend.log 2>&1 &
-    BACKEND_PID=$!
-    
-    # Wait for backend to start
-    sleep 3
-    
-    # Check if backend started successfully
-    if kill -0 $BACKEND_PID 2>/dev/null; then
-        log_success "Backend started (PID: $BACKEND_PID)"
-        echo $BACKEND_PID > ../.backend.pid
-        return 0
-    else
-        log_error "Backend failed to start"
-        log_error "Check logs: cat backend.log"
-        return 1
-    fi
-}
+log_info "Doctor kontrolü çalıştırılıyor..."
+"$REPO_ROOT/scripts/doctor.sh"
 
-# ============================================================
-# FRONTEND START
-# ============================================================
-start_frontend() {
-    log_info "Starting Frontend..."
-    
-    if [ ! -d "frontend/node_modules" ]; then
-        log_warn "node_modules not found. Installing dependencies..."
-        cd frontend
-        npm ci --legacy-peer-deps
-        cd ..
-    fi
-    
-    if [ ! -f "frontend/.env" ]; then
-        log_warn "frontend/.env not found!"
-        log_info "Creating from template..."
-        cp frontend/.env.example frontend/.env
-        log_info "Frontend .env created with localhost defaults"
-    fi
-    
-    cd frontend
-    
-    # Start frontend in background
-    npm start > ../frontend.log 2>&1 &
-    FRONTEND_PID=$!
-    
-    # Wait for frontend to start
-    sleep 5
-    
-    # Check if frontend started successfully
-    if kill -0 $FRONTEND_PID 2>/dev/null; then
-        log_success "Frontend started (PID: $FRONTEND_PID)"
-        echo $FRONTEND_PID > ../.frontend.pid
-        return 0
-    else
-        log_error "Frontend failed to start"
-        log_error "Check logs: cat frontend.log"
-        return 1
-    fi
-}
+cd "$REPO_ROOT/frontend"
 
-# ============================================================
-# MONGODB CHECK
-# ============================================================
-check_mongodb() {
-    log_info "Checking MongoDB..."
-    
-    # Check if Docker MongoDB is running
-    if docker ps 2>/dev/null | grep -q "mongo"; then
-        log_success "MongoDB running in Docker"
-        return 0
-    fi
-    
-    # Check if local mongod is running
-    if pgrep -x "mongod" > /dev/null; then
-        log_success "MongoDB running locally"
-        return 0
-    fi
-    
-    # Check if mongod command exists
-    if command -v mongod &> /dev/null; then
-        log_warn "MongoDB found but not running. Starting..."
-        sudo systemctl start mongod 2>/dev/null || log_warn "Could not start MongoDB"
-        sleep 2
-        return 0
-    fi
-    
-    log_warn "MongoDB not found locally or in Docker"
-    log_info "To start MongoDB with Docker, run:"
-    log_info "  docker run -d -p 27017:27017 --name encryptalk-mongo mongo:latest"
-    return 1
-    
-    if mongo --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
-        log_success "MongoDB is running"
-        return 0
-    else
-        log_warn "MongoDB may not be accessible"
-        return 1
-    fi
-}
+if [ ! -f "package.json" ]; then
+  log_error "frontend/package.json bulunamadı"
+  exit 1
+fi
+
+if [ ! -d "node_modules" ]; then
+  log_info "Bağımlılıklar yükleniyor (yarn install)..."
+  yarn install
+else
+  log_success "node_modules hazır"
+fi
+
+if [ "$RUN_TESTS" -eq 1 ]; then
+  log_info "Testler çalıştırılıyor (CI=1 yarn test)..."
+  CI=1 yarn test
+fi
+
+if [ "$RUN_BUILD" -eq 1 ]; then
+  log_info "Build alınıyor (yarn build)..."
+  yarn build
+fi
+
+log_success "Frontend başlatılıyor..."
+log_info "Varsayılan adres: http://localhost:3000"
+log_info "Durdurmak için: Ctrl+C"
+
+yarn start
 
 # ============================================================
 # MAIN

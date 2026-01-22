@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Send, Image as ImageIcon, Video, FileText, MapPin, Mic,
   Phone, VideoIcon, LogOut, ShieldCheck, Lock, Plus, Paperclip, X, Pin,
-  Smile, User, Search, Menu, HardDrive, Reply, Download, Users, Trash2,
+  Smile, User, Search, Menu, HardDrive, Reply, Download, Users, Trash2, Settings, AlertCircle,
 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { extractInternalId } from '@/utils/identity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,11 +23,17 @@ import NASModal from '@/components/NASModal';
 import VideoCallModal from '@/components/VideoCallModal';
 import MobileMenu from '@/components/MobileMenu';
 import { requestNotificationPermission, notifyNewMessage, notifyIncomingCall } from '@/utils/notifications';
+import { useUser } from '@/contexts/UserContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
-export default function ChatInterface({ user, onLogout }) {
+export default function ChatInterface() {
+  const { user, logout } = useUser();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [peerIdFromUrl, setPeerIdFromUrl] = useState(null);
+  const [peerIdError, setPeerIdError] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -69,7 +77,21 @@ export default function ChatInterface({ user, onLogout }) {
     fetchUsers();
     fetchConversations();
     initSocket();
-  }, []);
+
+    // Check for peer query param
+    const peerParam = searchParams.get('peer');
+    if (peerParam) {
+      const validPeerId = extractInternalId(peerParam);
+      if (validPeerId) {
+        setPeerIdFromUrl(validPeerId);
+        toast.info(`🔗 Peer bağlantısı: ${validPeerId}`);
+        // TODO: Initialize connection/conversation with this peer
+      } else {
+        setPeerIdError(`Geçersiz Peer ID formatı: ${peerParam}`);
+        toast.error('Geçersiz Peer ID');
+      }
+    }
+  }, [searchParams]);
 
   const initSocket = () => {
     const newSocket = io(BACKEND_URL, {
@@ -80,17 +102,14 @@ export default function ChatInterface({ user, onLogout }) {
     });
 
     newSocket.on('connect', () => {
-      console.log('✅ Socket bağlandı:', newSocket.id);
       toast.success('🟢 Bağlantı kuruldu');
     });
 
     newSocket.on('disconnect', () => {
-      console.log('❌ Socket bağlantısı kesildi');
       toast.error('🔴 Bağlantı kesildi');
     });
 
     newSocket.on('new_message', (message) => {
-      console.log('📩 Yeni mesaj alındı:', message);
       setMessages((prev) => {
         // Duplicate check
         if (prev.some(m => m.id === message.id)) return prev;
@@ -124,7 +143,6 @@ export default function ChatInterface({ user, onLogout }) {
 
   useEffect(() => {
     if (selectedConversation && socket) {
-      console.log('🔗 Konuşmaya katıldı:', selectedConversation.id);
       socket.emit('join_conversation', {
         conversation_id: selectedConversation.id,
         user_id: user.id,
@@ -178,8 +196,7 @@ export default function ChatInterface({ user, onLogout }) {
     try {
       const response = await axios.get(`${API}/users/${userId}`, config);
       return response.data;
-    } catch (error) {
-      console.error('Profil yüklenemedi:', error);
+    } catch (_) {
       return null;
     }
   };
@@ -204,9 +221,8 @@ export default function ChatInterface({ user, onLogout }) {
         }
         return prev;
       });
-    } catch (error) {
+    } catch (_) {
       // Sessiz hata - polling'de sürekli toast gösterme
-      console.error('Mesaj yükleme hatası:', error);
     }
   };
 
@@ -274,8 +290,6 @@ export default function ChatInterface({ user, onLogout }) {
         { ...config, headers: { ...config.headers, 'Content-Type': 'multipart/form-data' } }
       );
 
-      console.log('📤 Mesaj gönderildi:', response.data);
-      
       // Lokal güncelleme
       setMessages(prev => [...prev, response.data]);
       setMessageInput('');
@@ -283,8 +297,7 @@ export default function ChatInterface({ user, onLogout }) {
       setMessageType('text');
       setReplyingTo(null);
       
-    } catch (error) {
-      console.error('Mesaj gönderme hatası:', error);
+    } catch (_) {
       toast.error('❌ Mesaj gönderilemedi');
     }
   };
@@ -303,9 +316,7 @@ export default function ChatInterface({ user, onLogout }) {
     try {
       await axios.post(`${API}/messages/${messageId}/react`, { emoji }, config);
       fetchMessages(selectedConversation.id);
-    } catch (error) {
-      console.error('Reaction error:', error);
-    }
+    } catch (_) {}
   };
 
   const handleTyping = () => {
@@ -412,10 +423,10 @@ export default function ChatInterface({ user, onLogout }) {
   const handleLogout = async () => {
     try {
       await axios.post(`${API}/auth/logout`, {}, config);
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch (_) {
+      // Silent by design
     } finally {
-      onLogout();
+      logout();
     }
   };
 
@@ -603,8 +614,56 @@ export default function ChatInterface({ user, onLogout }) {
     <div className="h-[100dvh] bg-[#020617] flex flex-col lg:flex-row overflow-hidden">
       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
 
+      {/* Peer ID Error Banner */}
+      {peerIdError && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-red-900/90 border-b border-red-700 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-white">
+            <AlertCircle className="w-5 h-5" />
+            <span className="text-sm font-medium">{peerIdError}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => navigate('/home')}
+              className="text-white hover:bg-red-800"
+            >
+              Home'a Dön
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setPeerIdError(null)}
+              className="text-white hover:bg-red-800"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Peer Connection Info Banner */}
+      {peerIdFromUrl && !peerIdError && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-blue-900/90 border-b border-blue-700 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-white">
+            <MessageSquare className="w-5 h-5" />
+            <span className="text-sm font-medium">Peer bağlantısı hazır: {peerIdFromUrl}</span>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setPeerIdFromUrl(null)}
+            className="text-white hover:bg-blue-800"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Mobile Header - Only visible on small screens */}
-      <div className="lg:hidden bg-slate-950/50 border-b border-slate-800/50 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+      <div className="lg:hidden bg-slate-950/50 border-b border-slate-800/50 px-4 py-3 flex items-center justify-between sticky top-0 z-40"
+        style={{ marginTop: (peerIdError || peerIdFromUrl) ? '52px' : '0' }}
+      >
         <Sheet open={showSidebarSheet} onOpenChange={setShowSidebarSheet}>
           <SheetTrigger asChild>
             <Button size="sm" variant="ghost" className="text-slate-400">
@@ -697,6 +756,9 @@ export default function ChatInterface({ user, onLogout }) {
               <HardDrive className="w-4 h-4" />
             </Button>
           )}
+          <Button size="sm" variant="ghost" onClick={() => navigate('/settings')} className="text-slate-400 hover:text-[#22c55e]">
+            <Settings className="w-4 h-4" />
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setShowProfile(true)} className="text-slate-400 hover:text-[#22c55e]">
             <User className="w-4 h-4" />
           </Button>
@@ -726,6 +788,9 @@ export default function ChatInterface({ user, onLogout }) {
                   <HardDrive className="w-4 h-4" />
                 </Button>
               )}
+              <Button size="sm" variant="ghost" onClick={() => navigate('/settings')} className="text-slate-400 hover:text-[#22c55e]">
+                <Settings className="w-4 h-4" />
+              </Button>
               <Button size="sm" variant="ghost" onClick={handleLogout} className="text-slate-400 hover:text-red-400">
                 <LogOut className="w-4 h-4" />
               </Button>

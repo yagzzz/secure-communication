@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useUser } from '@/contexts/UserContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
-export default function Login({ onLogin }) {
+export default function Login() {
+  const { login } = useUser();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ export default function Login({ onLogin }) {
         password,
       });
 
-      onLogin(response.data.user, response.data.access_token);
+      await login(response.data.user, response.data.access_token);
       toast.success('Giriş başarılı!');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Giriş başarısız');

@@ -1,32 +1,23 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, MessageSquare, ShieldCheck, Plus, Trash2, LogOut, Eye, HardDrive, Settings } from 'lucide-react';
+import { Users, MessageSquare, ShieldCheck, LogOut, Eye, HardDrive, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
 import { toast } from 'sonner';
 import NASModal from '@/components/NASModal';
 import AdminSettings from './AdminSettings';
+import { useUser } from '@/contexts/UserContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const API = `${BACKEND_URL}/api`;
 
-export default function AdminDashboard({ user, onLogout }) {
+export default function AdminDashboard() {
+  const { user, logout } = useUser();
   const [users, setUsers] = useState([]);
   const [metadata, setMetadata] = useState(null);
-  const [showCreateUser, setShowCreateUser] = useState(false);
   const [showNAS, setShowNAS] = useState(false);
-  const [newUser, setNewUser] = useState({
-    username: '',
-    password: '',
-    security_passphrase: '',
-    role: 'user',
-  });
 
   const token = localStorage.getItem('token');
   const config = {
@@ -56,39 +47,13 @@ export default function AdminDashboard({ user, onLogout }) {
     }
   };
 
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${API}/auth/register`, newUser, config);
-      toast.success('✅ Kullanıcı oluşturuldu');
-      setShowCreateUser(false);
-      setNewUser({ username: '', password: '', security_passphrase: '', role: 'user' });
-      fetchUsers();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Kullanıcı oluşturulamadı');
-    }
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
-    
-    try {
-      await axios.delete(`${API}/users/${userId}`, config);
-      toast.success('🗑️ Kullanıcı silindi');
-      fetchUsers();
-      fetchMetadata();
-    } catch (error) {
-      toast.error('Kullanıcı silinemedi');
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await axios.post(`${API}/auth/logout`, {}, config);
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch (_) {
+      // Silent by design
     } finally {
-      onLogout();
+      logout();
     }
   };
 
@@ -190,78 +155,9 @@ export default function AdminDashboard({ user, onLogout }) {
                     <CardTitle className="text-xl text-slate-100">Kullanıcı Yönetimi</CardTitle>
                     <CardDescription className="text-slate-400">Tüm kullanıcıları görüntüle ve yönet</CardDescription>
                   </div>
-                  <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
-                    <DialogTrigger asChild>
-                      <Button data-testid="create-user-button" className="bg-[#22c55e] text-black hover:bg-[#16a34a]">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Yeni Kullanıcı
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-slate-900 border-slate-800">
-                      <DialogHeader>
-                        <DialogTitle className="text-slate-100">Yeni Kullanıcı Oluştur</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={handleCreateUser}>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="username" className="text-slate-300">Kullanıcı Adı</Label>
-                            <Input
-                              id="username"
-                              data-testid="new-user-username-input"
-                              value={newUser.username}
-                              onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                              required
-                              className="bg-slate-800 border-slate-700"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="password" className="text-slate-300">Şifre</Label>
-                            <Input
-                              id="password"
-                              data-testid="new-user-password-input"
-                              type="password"
-                              value={newUser.password}
-                              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                              required
-                              className="bg-slate-800 border-slate-700"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="passphrase" className="text-slate-300">Güvenli Kelime</Label>
-                            <Input
-                              id="passphrase"
-                              data-testid="new-user-passphrase-input"
-                              value={newUser.security_passphrase}
-                              onChange={(e) => setNewUser({ ...newUser, security_passphrase: e.target.value })}
-                              required
-                              className="bg-slate-800 border-slate-700"
-                              placeholder="Kurtarma için güvenli kelime"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="role" className="text-slate-300">Rol</Label>
-                            <Select
-                              value={newUser.role}
-                              onValueChange={(value) => setNewUser({ ...newUser, role: value })}
-                            >
-                              <SelectTrigger data-testid="new-user-role-select" className="bg-slate-800 border-slate-700">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-slate-800 border-slate-700">
-                                <SelectItem value="user">Kullanıcı</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button type="submit" data-testid="create-user-submit-button" className="bg-[#22c55e] text-black hover:bg-[#16a34a]">
-                            Oluştur
-                          </Button>
-                        </DialogFooter>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
+                  <div className="text-xs text-slate-500">
+                    Okuma modu: yönetimsel değişiklikler devre dışı
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 max-h-96 overflow-y-auto message-scroll">
@@ -280,17 +176,7 @@ export default function AdminDashboard({ user, onLogout }) {
                             </p>
                           </div>
                         </div>
-                        {u.id !== user.id && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            data-testid={`delete-user-${u.id}`}
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-950/20"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                        <span className="text-xs text-slate-500">Salt okuma</span>
                       </div>
                     ))}
                   </div>
@@ -334,7 +220,7 @@ export default function AdminDashboard({ user, onLogout }) {
             </TabsContent>
 
             <TabsContent value="settings">
-              <AdminSettings user={user} />
+              <AdminSettings />
             </TabsContent>
           </Tabs>
         </div>
